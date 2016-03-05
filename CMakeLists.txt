@@ -15,7 +15,15 @@ set(CMAKE_CXX_FLAGS "-std=c++14 -pedantic -Wall -Wextra -Wshadow -Wconversion ${
 
 #file(GLOB_RECURSE SRC "src/*.cpp")
 #file(GLOB_RECURSE SRC "src/*.h")
-set(SRC "src/main.cpp")
+set(SRC
+"src/main.cpp"
+"src/asset.hpp"
+"src/persist.hpp"
+"src/dialogue.hpp"
+"src/scene.hpp"
+"src/json.hpp"
+"src/load_json.hpp"
+)
 
 include_directories(${SFML_INCLUDE_DIR} "src/")
 add_executable(${PROJECT_NAME} ${SRC})

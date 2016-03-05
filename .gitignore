@@ -7,3 +7,4 @@ cmake/
 /cmake_install.cmake
 /*.cbp
 /*.exe
+/sfmlgamejam05.layout
