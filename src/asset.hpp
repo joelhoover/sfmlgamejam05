@@ -1,12 +1,12 @@
 #ifndef _ASSET_HPP_
 #define _ASSET_HPP_
 
+#include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
+
 #include <string>
 #include <unordered_map>
 #include <memory>
-
-#include <SFML/Graphics.hpp>
-#include <SFML/Audio.hpp>
 
 class Asset
 {

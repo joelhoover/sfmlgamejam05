@@ -4,6 +4,17 @@
 class Dialogue
 {
 
+public:
+
+	Dialogue(Asset& iasset)
+		:
+		asset(iasset)
+	{
+	}
+
+private:
+
+	Asset& asset;
 };
 
 #endif // _DIALOGUE_HPP_

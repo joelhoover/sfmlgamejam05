@@ -1,14 +1,15 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 
 #include <cstdint>
 
-#include "asset.hpp"
-#include "scene.hpp"
-#include "persist.hpp"
-#include "dialogue.hpp"
-
 #include "json.hpp"
 #include "load_json.hpp"
+
+#include "asset.hpp"
+#include "persist.hpp"
+#include "dialogue.hpp"
+#include "scene.hpp"
 
 const sf::VideoMode VIDEO_MODE(1280, 720);
 
@@ -23,9 +24,21 @@ int main()
 	sf::Time frame_time = sf::Time::Zero;
 
 	Asset asset;
+	Dialogue dialogue(asset);
 	Persist persist;
-	Dialogue dialogue;
-	Scene scene;
+	std::unique_ptr<Scene> scene;
+
+	// load / create new..
+	// dialogue data
+	// persist data ( progress )
+	// scene data
+
+	// dev mode
+	// CTRL+S to save each
+
+	// load scene (start menu scene)
+
+	scene = std::make_unique<Scene>(asset, dialogue, persist);
 
 	while(terminate == false)
 	{
@@ -46,6 +59,8 @@ int main()
 		// start/restart game = reset persist
 
 		// transition from one scene to another = reset scene
+
+
 
 		// Render
 		window.clear();
