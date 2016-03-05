@@ -28,9 +28,14 @@ int main()
 	Persist persist;
 	std::unique_ptr<Scene> scene;
 
+	// assets. load files here
+
+	asset.load_texture("background", "data/tex/background.png");
+
 	// load / create new..
 	// dialogue data
 	// persist data ( progress )
+
 	// scene data
 
 	// dev mode
