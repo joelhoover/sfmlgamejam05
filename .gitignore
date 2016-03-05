@@ -1,0 +1,9 @@
+*.dll
+
+CMakeFiles/
+cmake/
+/CMakeCache.txt
+/Makefile
+/cmake_install.cmake
+/*.cbp
+/*.exe
