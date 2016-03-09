@@ -7,16 +7,25 @@
 
 #include "json.hpp"
 
+// iterate array
+//	for (auto a : data)
+
+// if key exists
+// data.count("key")
+// data["key"]
+
+// get type
+// data.get<int>()
+
 namespace shrapx
 {
 
 nlohmann::json load_json(const std::string& filename )
 {
-	using ifstream = std::basic_ifstream<char>;
-	ifstream file_stream;
+	std::ifstream file_stream;
 	std::stringstream string_stream;
 
-	file_stream.exceptions(ifstream::eofbit | ifstream::failbit | ifstream::badbit);
+	file_stream.exceptions(std::ifstream::eofbit | std::ifstream::failbit | std::ifstream::badbit);
 
 	std::cout << "load: " << filename.c_str() << "." << std::endl;
 
@@ -38,6 +47,6 @@ nlohmann::json load_json(const std::string& filename )
 	}
 
 	return nlohmann::json::parse(string_stream);
-};
+}
 
-} // namespace mygl
+} // namespace shrapx
