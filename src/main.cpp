@@ -149,10 +149,12 @@ int main()
 				switch (pointer_type)
 				{
 				case USE_SPEECH:
+					pointer_sprite.setOrigin(4,8);
 					pointer_sprite.setTextureRect(sf::IntRect(0,8,8,8));
 					break;
 
 				default:
+					pointer_sprite.setOrigin(-1,-1);
 					pointer_sprite.setTextureRect(sf::IntRect(0,0,8,8));
 				}
 			}
