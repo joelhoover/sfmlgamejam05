@@ -2,6 +2,9 @@
 #define _DIALOGUE_HPP_
 
 #include <iostream>
+#include <string>
+#include <unordered_set>
+#include <algorithm>
 
 #include "common.hpp"
 
@@ -12,6 +15,8 @@
 #include "speech.hpp"
 #include "Group.hpp"
 
+#include "persist.hpp"
+
 using json = nlohmann::json;
 
 // determine choice
@@ -19,15 +24,19 @@ using json = nlohmann::json;
 // 1 entry - silence, to continue a monologue
 // 1 entry - a pre-determined reply ( no choice )
 
-class Dialogue : public sf::Transformable, public sf::Drawable
+class Dialogue : public sf::Drawable
 {
 
 public:
 
-	Dialogue(Asset& iasset)
+	Dialogue(Asset& iasset, Persist& ipersist)
 		:
-		asset(iasset)
+		asset(iasset),
+		persist(ipersist)
 	{
+		cursor.setTexture( *asset.textures["text_cursor"] );
+		//cursor.setOrigin(0,5);
+		cursor.setColor(sf::Color::Red);
 	}
 
 	void load_from_file(const std::string& file_name)
@@ -35,7 +44,7 @@ public:
 		json data = shrapx::load_json(file_name);
 		for (auto& element : data)
 		{
-			entries.emplace( element[0].get<SpeechID>(), std::make_unique<Speech>(element) );
+			entries.emplace( element["id"].get<SpeechID>(), std::make_unique<Speech>(element) );
 			speech_counter++;
 		}
 	}
@@ -47,82 +56,118 @@ public:
 		{
 			data.push_back( entry_pair.second->save() );
 		}
-		shrapx::save_text(file_name, data.dump());
+		shrapx::save_text(file_name, data.dump(3));
+	}
+
+	void update()
+	{
+		update_text();
 	}
 
 	void mouse_selected(const sf::Vector2f& pos)
 	{
-		uint text_num;
+		m_highlighted_line = contain_pos(pos);
 
-		bool picked = false;
+		edit_cursor_fix_limits();
+
+		reset_text();
+	}
+
+	uint contain_pos(const sf::Vector2f& pos)
+	{
 		for(uint i=0; i<texts.size(); ++i)
 		{
 			sf::Text* text = static_cast<sf::Text*>( texts[i].get() );
 
 			assert(text != nullptr);
 
-			if (text->getGlobalBounds().contains(pos))
+			if ( text->getGlobalBounds().contains(pos) )
 			{
-				picked = true;
-				text_num = i;
+				return i;
 			}
 		}
-
-		if ( !picked )
-		{
-			std::cout << "!" << std::endl;
-			return;
-		}
-		else
-		{
-			std::cout << text_num << std::endl;
-		}
-
-		edit_line_position = text_num;
-
-		fix_cursor_limits();
-
-		//reset_text();
-		update_text();
+		return texts.size();
 	}
 
-	void advance(uint selection)
+	uint closest_y(float pos_y)
 	{
-		edit_line_position = 0;
-		edit_cursor_position = 0;
-
-		if ( entries[selection] == nullptr )
+		uint closest_i = texts.size();
+		float closest_diff = 1000.0f;
+		for(uint i=0; i<texts.size(); ++i)
 		{
-			if (edit)
-			{
-				// make a new entry, connect as response of previous
-				// toggle from self to other
+			sf::Text* text = static_cast<sf::Text*>( texts[i].get() );
 
-				entries[speech_counter] = std::make_unique<Speech>();
-				selection = speech_counter;
-				speech_counter++;
-			}
-			else
+			assert(text != nullptr);
+
+			auto bounds = text->getGlobalBounds();
+			float dist_y = fabs(pos_y - (bounds.top+(bounds.height*0.5f)));
+
+			if ( dist_y < closest_diff )
 			{
-				// end of dialogue
-				active = false;
-				view_speech_id = 0;
-				return;
+				closest_diff = dist_y;
+				closest_i = i;
 			}
 		}
+		//if (closest_diff == 1000.0f) return 0;
+		return closest_i;
+	}
 
-		//std::cout << get_entry()->print() << std::endl;
-		//std::cout << get_entry()->print_choices() << std::endl;
+	void activate(uint selection)
+	{
+		assert( entries.find(selection) != entries.end() );
 
-		active = true;
+		m_active = true;
+		m_active_speech_id = selection;
+		m_text_fill_counter = 0;
+		m_text_fill_complete = false;
+
+		m_highlighted_line = m_edit ? 0 : 1;
+
+		edit_cursor_place_at_end();
 
 		reset_text();
-		update_text();
+	}
+
+	void activate_highlighted()
+	{
+		if ( !m_text_fill_complete ) return;
+
+		if ( m_highlighted_line == 0 )
+		{
+			deactivate();
+			return;
+		}
+
+		Speech* entrep = get_entry( m_highlighted_line );
+		if (entrep == nullptr) return;
+
+		apply_state_flags(entrep);
+
+		activate( entrep->id );
+	}
+
+	void apply_state_flags(Speech* speech)
+	{
+		persist.state_flags.insert(speech->state_flags.begin(), speech->state_flags.end());
+
+		/*std::unordered_set<std::string> inter;
+		std::set_intersection(
+			persist.state_flags.begin(), persist.state_flags.end(),
+			speech->state_flags.begin(), speech->state_flags.end(),
+			std::inserter(inter, inter.begin()));*/
+
+		std::cout << "flags: ";
+		//for (auto& str : inter )
+		for (auto& str : persist.state_flags )
+		{
+			std::cout << str << ", ";
+		}
+		std::cout << std::endl << std::endl;
 	}
 
 	Speech* get_entry(uint reply_id=0)
 	{
-		auto entry = entries[view_speech_id].get();
+		auto entry = entries[m_active_speech_id].get();
 
 		if (entry == nullptr) return nullptr;
 		if (reply_id == 0) return entry;
@@ -134,140 +179,211 @@ public:
 
 	void reset_text()
 	{
-		Speech* selected = entries[view_speech_id].get();
+		Speech* selected = entries[m_active_speech_id].get();
 		if (selected == nullptr) return;
 
 		texts.clear();
+		//shapes_debug.clear();
 
-		for ( uint text_id=0; text_id<(selected->replies.size()+1); ++text_id )
+		// +1 reason. zero is the main speech
+
+		// one additional text for end_dialogue only
 		{
 			std::unique_ptr<sf::Text> text = std::make_unique<sf::Text>();
 			texts.emplace_back(std::move(text));
+
+			std::unique_ptr<sf::Sprite> spr = std::make_unique<sf::Sprite>();
+			spr->setTexture(*asset.textures["box"]);
+			//shapes_debug.emplace_back(std::move(spr));
+		}
+
+		if ( selected->replies.size() )
+		{
+			for ( uint text_id=0; text_id<(selected->replies.size()); ++text_id )
+			{
+				std::unique_ptr<sf::Text> text = std::make_unique<sf::Text>();
+				texts.emplace_back(std::move(text));
+
+				std::unique_ptr<sf::Sprite> spr = std::make_unique<sf::Sprite>();
+				spr->setTexture(*asset.textures["box"]);
+				//shapes_debug.emplace_back(std::move(spr));
+			}
 		}
 	}
 
 	void update_text()
 	{
-		Speech* selected = entries[view_speech_id].get();
+		Speech* selected = entries[m_active_speech_id].get();
 		if (selected == nullptr) return;
-
+		if ( texts.size() == 0 ) return;
+		uint pos_x = 15;
 		uint pos_y = 0;
-		for ( uint text_id=0; text_id<(selected->replies.size()+1); ++text_id )
+		// speech text
+		{
+			std::string str = selected->text;
+
+			sf::Text* text = static_cast<sf::Text*>( texts.front().get() );
+
+
+			assert(text != nullptr);
+
+			if ( m_edit && m_highlighted_line == 0 )
+			{
+				set_selected(text);
+			}
+			else
+			{
+				uint strsize = str.size();
+				if (m_text_fill_counter < strsize)
+				{
+					str = str.substr(0, m_text_fill_counter);
+					m_text_fill_counter++;
+					if (m_text_fill_counter == strsize) m_text_fill_complete = true;
+				}
+				set_deselected(text);
+			}
+
+			text->setString( str );
+
+			if ( m_edit && m_highlighted_line == 0 )
+			{
+				cursor.setPosition( text->findCharacterPos(m_cursor_position) );
+			}
+
+			text->setPosition(pos_x, 0);
+
+			//sf::Sprite* spr = static_cast<sf::Sprite*>(shapes_debug.front().get());
+			//spr->setScale(text->getGlobalBounds().width/16.0f, text->getGlobalBounds().height/16.0f);
+			//spr->setPosition( text->getPosition());
+		}
+
+		// reply list
+		if ( selected->replies.size() == 0 ) return;
+
+		// start height: center of screen
+		pos_y = ZOOM_H/2;
+
+		for ( uint text_id=1; text_id<(selected->replies.size()+1); ++text_id )
 		{
 			sf::Text* text = static_cast<sf::Text*>( texts[text_id].get() );
 
 			assert(text != nullptr);
 
-			std::string str = (text_id==0) ? selected->text : entries[selected->replies[text_id-1]]->text;
+			std::string str = entries[selected->replies[text_id-1]]->text;
 
-			if (edit && text_id == edit_line_position)
-			{
-				str.insert(edit_cursor_position,"|",1);
+			if (text_id == m_highlighted_line)
 				set_selected(text);
-			}
 			else
-			{
 				set_deselected(text);
+
+			text->setString( "> " + str );
+
+			if ( m_edit && (text_id == m_highlighted_line))
+			{
+				cursor.setPosition( text->findCharacterPos(m_cursor_position+2) );
 			}
 
-			text->setString( (text_id==0?"":"> ") + str + '\n' );
+			text->setPosition(pos_x, pos_y);
+			pos_y += text->getGlobalBounds().height+10;
 
-			text->setPosition(0, pos_y);
-			pos_y += text->getGlobalBounds().height+1;
-
+			//sf::Sprite* spr = static_cast<sf::Sprite*>(shapes_debug[text_id].get());
+			//spr->setScale(text->getGlobalBounds().width/16.0f, text->getGlobalBounds().height/16.0f);
+			//spr->setPosition( text->getPosition());
 		}
-	}
-	void advance_selected()
-	{
-		Speech* entrep = get_entry(edit_line_position);
-		if (entrep == nullptr) return;
-
-		advance( entrep->id );
 	}
 
 	// editor settings
+	SpeechID add_speech()
+	{
+		auto new_entry = std::make_unique<Speech>();
+		SpeechID new_id = speech_counter;
+		new_entry->id = new_id;
+		new_entry->text = "new";
+		entries[new_id] = std::move(new_entry);
+		speech_counter++;
+
+		return new_id;
+	}
+
+	SpeechID add_reply(Speech* entry)
+	{
+		//auto entry = entries[m_active_speech_id].get();
+		//assert(entry != nullptr);
+		//if (entry == nullptr ) return;
+
+		SpeechID new_id = add_speech();
+
+		entry->replies.push_back(new_id);
+
+		return new_id;
+	}
+
+
+	void edit_mode(bool is_edit)
+	{
+		m_edit = is_edit;
+		m_highlighted_line = 0;
+		edit_cursor_place_at_end();
+		reset_text();
+	}
 
 	void edit_up()
 	{
-		if ( edit_line_position > 0 ) edit_line_position--;
+		if ( m_highlighted_line > 0 ) m_highlighted_line--;
 
-		fix_cursor_limits();
-		//reset_text();
-		update_text();
+		edit_cursor_fix_limits();
 	}
 
 	void edit_down()
 	{
-		edit_line_position++;
+		m_highlighted_line++;
 
-		auto entry = entries[view_speech_id].get();
+		auto entry = entries[m_active_speech_id].get();
 		if (entry == nullptr ) return;
-		if ( edit_line_position > entry->replies.size() )
+		if ( m_highlighted_line > entry->replies.size() )
 		{
-			entries[speech_counter] = std::make_unique<Speech>();
-			entry->replies.push_back(speech_counter);
-			speech_counter++;
+			add_reply(entry);
 		}
 
-		fix_cursor_limits();
+		edit_cursor_fix_limits();
 
 		reset_text();
-		update_text();
 	}
 
 	void edit_left()
 	{
-		if (edit_cursor_position == 0) return;
-		--edit_cursor_position;
+		if (m_cursor_position == 0) return;
+		--m_cursor_position;
 
-		fix_cursor_limits();
-
-		//reset_text();
-		update_text();
+		edit_cursor_fix_limits();
 	}
 
 	void edit_right()
 	{
-		Speech* entrep = get_entry(edit_line_position);
+		Speech* entrep = get_entry(m_highlighted_line);
 		if (entrep == nullptr) return;
-		if (edit_cursor_position >= entrep->text.size()) return;
-		++edit_cursor_position;
-
-		//reset_text();
-		update_text();
-	}
-
-	void fix_cursor_limits()
-	{
-		Speech* entrep = get_entry(edit_line_position);
-		if (entrep == nullptr) return;
-		if (edit_cursor_position > entrep->text.size()) edit_cursor_position = entrep->text.size();
+		if (m_cursor_position >= entrep->text.size()) return;
+		++m_cursor_position;
 	}
 
 	void edit_backspace()
 	{
-		if (edit_cursor_position > 0 )
+		if (m_cursor_position > 0 )
 		{
-			--edit_cursor_position;
+			--m_cursor_position;
 
-			Speech* entrep = get_entry(edit_line_position);
+			Speech* entrep = get_entry(m_highlighted_line);
 			if (entrep == nullptr) return;
-			entrep->text.erase(edit_cursor_position,1);
-
-			//reset_text();
-			update_text();
+			entrep->text.erase(m_cursor_position,1);
 		}
 	}
 
 	void edit_insert(char c)
 	{
-		Speech* entrep = get_entry(edit_line_position);
+		Speech* entrep = get_entry(m_highlighted_line);
 		if (entrep == nullptr) return;
-		entrep->text.insert(edit_cursor_position,1,c);
-		edit_cursor_position++;
-
-		//reset_text();
-		update_text();
+		entrep->text.insert(m_cursor_position,1,c);
+		m_cursor_position++;
 	}
 
 	void edit_newline()
@@ -275,11 +391,30 @@ public:
 		edit_insert('\n');
 	}
 
+	void edit_cursor_fix_limits()
+	{
+		Speech* entrep = get_entry(m_highlighted_line);
+		if(entrep == nullptr) return;
+		if (m_cursor_position > entrep->text.size()) m_cursor_position = entrep->text.size();
+	}
+
+	void edit_cursor_place_at_end()
+	{
+		Speech* entrep = get_entry(m_highlighted_line);
+		if(entrep == nullptr) return;
+		m_cursor_position = entrep->text.size();
+	}
+
 	void set_selected(sf::Text* text)
 	{
 		text->setFont(*default_font);
 		text->setCharacterSize(char_size);
-		text->setColor( sf::Color(255,127,127,255) );
+
+		if (m_edit)
+			text->setColor( sf::Color(255,127,127,255) );
+		else
+			text->setColor( sf::Color(127,127,255,255) );
+
 		//text->setFillColor( sf::Color(127,127,127,255) );
 		//text->setOutlineColor( sf::Color(255,127,127,255) );
 		//text->setOutlineThickness(2);
@@ -301,35 +436,41 @@ public:
 	std::unordered_map<SpeechID, std::string> state_ids;
 
 
-	// editor state
-
-	uint view_speech_id = 0;
-
-	bool edit = false;
-	uint edit_line_position = 0;
-	uint edit_cursor_position = 0;
-
-	// spritey stuff
+	// sprite stuff
 
 	void draw(sf::RenderTarget& target, sf::RenderStates states) const
 	{
-		states.transform *= getTransform();
+		//target.draw(shapes_debug, states);
 		target.draw(texts, states);
+
+		if (m_edit) target.draw(cursor, states);
 	}
 
-	// display + using?
-	bool active = false;
-
 	sf::Font* default_font;
-	uint char_size = 15;
+	uint char_size = 10;
 
-	sf::Group texts;
-
-	Speech* speech_viewing = nullptr;
+	bool is_active() { return m_active; }
+	void deactivate() { m_active = false; }
 
 private:
 
+	uint m_text_fill_counter = 0;
+	bool m_text_fill_complete = false;
+
+	uint m_active_speech_id = 0;
+	uint m_highlighted_line = 0;
+	uint m_cursor_position = 0;
+
+	bool m_edit = false;
+	bool m_active = false;
+
+	sf::Sprite cursor;
+
+	sf::Group texts;
+	//sf::Group shapes_debug;
+
 	Asset& asset;
+	Persist& persist;
 
 };
 

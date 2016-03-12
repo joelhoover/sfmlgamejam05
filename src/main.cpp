@@ -10,9 +10,9 @@
 #include "dialogue.hpp"
 #include "scene.hpp"
 
+
+
 const sf::VideoMode VIDEO_MODE(SCREEN_W, SCREEN_H);
-
-
 
 int main()
 {
@@ -21,7 +21,6 @@ int main()
 	bool terminate = false;
 	sf::Clock frame_clock;
 	sf::Time frame_time = sf::Time::Zero;
-
 
 	sf::RenderWindow window(VIDEO_MODE, "sfmlgamejam05", sf::Style::Close);
 	window.setFramerateLimit(120);
@@ -48,11 +47,16 @@ int main()
 	Asset asset;
 
 	// load files here
-	asset.load_font("pixel", "data/font/434.ttf");
+//asset.load_font("pixel", "data/font/434.ttf");
+	asset.load_font("pixel", "data/font/ARCADEPI.TTF");
 	asset.load_texture("background", "data/tex/background.png");
 	asset.load_texture("placeholder", "data/tex/placeholder.png");
+	asset.load_texture("box", "data/tex/box.png");
+	asset.load_texture("text_cursor", "data/tex/text_cursor.png");
 	asset.load_texture("police_station", "data/tex/police_station.png");
 	asset.load_texture("ui", "data/tex/ui.png");
+
+	asset.load_shader("fader", "data/shaders/fader_v.glsl", "data/shaders/fader_f.glsl");
 
 	sf::Sprite pointer_sprite( *asset.textures["ui"] );
 	pointer_sprite.setTextureRect( sf::IntRect(0,0,8,8) );
@@ -64,8 +68,9 @@ int main()
 
 	edit_mode_sprite.setPosition( ZOOM_W-32, 0 );
 
+	Persist persist;
 
-	Dialogue dialogue(asset);
+	Dialogue dialogue(asset, persist);
 
 	// load / create new..
 
@@ -74,16 +79,11 @@ int main()
 	//dialogue.sprite.set_font(*asset.fonts["pixel"]);
 
 	dialogue.default_font = asset.fonts["pixel"].get();
-	//dialogue.selected_entry = 0
 
-	//dialogue.advance(0);
-
-	//std::cout << dialogue.entries[0]->print() << std::endl;
-
-	dialogue.setPosition(32,32);
+	//dialogue.setPosition(32,32);
 
 
-	Persist persist;
+
 
 	// persist data ( progress )
 
@@ -93,7 +93,7 @@ int main()
 	// CTRL+S to save each
 
 	// load scene (start menu scene)
-	std::string test_typing;
+
 
 	std::unique_ptr<Scene> scene = std::make_unique<Scene>(asset, dialogue, persist);
 
@@ -111,12 +111,15 @@ int main()
 			if( event.type == sf::Event::MouseMoved)
 			{
 				sf::Vector2f pos = { float(event.mouseMove.x) / ZOOM, float(event.mouseMove.y) / ZOOM};
-				if ( dialogue.active )
+				if ( dialogue.is_active() )
 				{
-					// highlight dialogue option
-					pointer_type = USE_DEFAULT;
+					if (!edit_mode)
+					{
+						// highlight dialogue option
+						pointer_type = USE_DEFAULT;
 
-					dialogue.mouse_selected(pos);
+						dialogue.mouse_selected(pos);
+					}
 				}
 				else
 				{
@@ -164,8 +167,6 @@ int main()
 			// mode to select the speech string to edit
 			if (edit_mode)
 			{
-				// create mode
-
 				if ( event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Down)
 					dialogue.edit_down();
 
@@ -180,7 +181,6 @@ int main()
 
 				if (event.type == sf::Event::TextEntered)
 				{
-					//std::cout << event.text.unicode << std::endl;
 					if (event.text.unicode > 31 && event.text.unicode < 128)
 					{
 						dialogue.edit_insert((char)event.text.unicode);
@@ -202,33 +202,43 @@ int main()
 				{
 					dialogue.save_to_file("data/dialogue.txt");
 				}
-
 			}
-			else // PLAY mode
+
+			//else // PLAY mode
+
+			if( event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left )
 			{
-				// play control: mouse move and click only
+				sf::Vector2f pos = { float(event.mouseButton.x) / ZOOM, float(event.mouseButton.y) / ZOOM};
+				std::cout << "pressed. " << pos.x << " " << pos.y << std::endl;
 
-				if( event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left )
+				// only frob scene if theres no dialogue up
+				if ( dialogue.is_active() )
 				{
-					sf::Vector2f pos = { float(event.mouseButton.x) / ZOOM, float(event.mouseButton.y) / ZOOM};
-					std::cout << "pressed. " << pos.x << " " << pos.y << std::endl;
+					dialogue.activate_highlighted();
+				}
+				else
+				{
+					scene->frob( pos );
+				}
+			}
 
-					// only frob scene if theres no dialogue up
-					if ( !dialogue.active )
-					{
-						scene->frob( pos );
-					}
-					else
-					{
-						dialogue.advance_selected();
-					}
+			if( event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Right )
+			{
+				sf::Vector2f pos = { float(event.mouseButton.x) / ZOOM, float(event.mouseButton.y) / ZOOM};
+				std::cout << "pressed. " << pos.x << " " << pos.y << std::endl;
+
+				// quit dialogue
+				if ( dialogue.is_active() )
+				{
+					dialogue.deactivate();
+					scene->focus();
 				}
 			}
 
 			if ( event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape )
 			{
 				edit_mode = !edit_mode;
-				dialogue.edit = edit_mode;
+				dialogue.edit_mode(edit_mode);
 			}
 
 		}
@@ -236,11 +246,10 @@ int main()
 		// Update
 		frame_time = frame_clock.restart();
 
+		dialogue.update();
 		scene->update();
 
-		// overlay of dialogue system = passed to scene
-
-		// start/restart game = reset persist
+		// start, restart game = reset persist
 
 		// transition from one scene to another = reset scene
 
@@ -254,7 +263,7 @@ int main()
 
 
 		renderui.clear(sf::Color::Transparent);
-		if ( dialogue.active ) renderui.draw( dialogue );
+		if ( dialogue.is_active() ) renderui.draw( dialogue );
 		if ( edit_mode )	     renderui.draw( edit_mode_sprite );
 		renderui.draw(pointer_sprite);
 		renderui.display();

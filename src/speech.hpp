@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 #include "common.hpp"
 
@@ -30,35 +31,38 @@ struct Speech
 
 	void load(const json& obj)
 	{
-		if ( obj.size() == 0 ) return;
-		id = obj[0];
+		if (obj.count("id"))
+			id = obj["id"];
 
-		if ( obj.size() == 1 ) return;
+		if (obj.count("text"))
+			text = obj["text"];
 
-		text = obj[1];
+		if (obj.count("reply"))
+			for (auto& element : obj["reply"])
+				replies.push_back(element.get<SpeechID>());
 
-		if (obj.size() == 2) return;
-
-		for (auto& element : obj[2])
-		{
-			replies.push_back( element.get<SpeechID>() );
-		}
+		if (obj.count("flag"))
+			for (auto& element : obj["flag"])
+				state_flags.emplace(element.get<std::string>());
 	}
 
 	json save()
 	{
-		json obj = {id, text, nullptr};
+		json obj = {{"id", id}, {"text",text} };
 
-		for ( SpeechID reply : replies )
-		{
-			obj[2].push_back( reply );
-		}
+		for ( auto elem : replies )
+			obj["reply"].push_back(elem);
+
+		for ( auto elem : state_flags )
+			obj["flag"].push_back(elem);
+
 		return obj;
 	}
 
 	SpeechID id;
 	std::string text;
 	std::vector<SpeechID> replies;
+	std::unordered_set<std::string> state_flags;
 };
 
 #endif // _SPEECH_HPP_

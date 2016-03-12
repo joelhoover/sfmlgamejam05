@@ -16,6 +16,14 @@ class Asset
 {
 public:
 
+
+	void load_shader(const std::string& tag, const std::string& file_vert, const std::string& file_frag)
+	{
+		auto emplace_result = shaders.emplace(tag, std::make_unique<sf::Shader>());
+		assert(emplace_result.second);
+		assert( emplace_result.first->second.get()->loadFromFile(file_vert, file_frag) );
+	}
+
 	void load_font(const std::string& tag, const std::string& filepath)
 	{
 		auto emplace_result = fonts.emplace(tag, std::make_unique<sf::Font>());
@@ -37,6 +45,7 @@ public:
 		assert( sb->loadFromFile(filepath) );
 	}
 
+	std::unordered_map<std::string, std::unique_ptr<sf::Shader>> shaders;
 	std::unordered_map<std::string, std::unique_ptr<sf::Font>> fonts;
 	std::unordered_map<std::string, std::unique_ptr<sf::Texture>> textures;
 	std::unordered_map<std::string, std::shared_ptr<sf::SoundBuffer>> soundbuffers;

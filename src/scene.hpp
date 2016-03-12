@@ -12,6 +12,7 @@
 #include <memory>
 
 
+
 class MegaSprite : public sf::Sprite
 {
 
@@ -45,6 +46,8 @@ public:
 		sprite->use_types.push_back(USE_SPEECH);
 		sprite->setTexture( *asset.textures["placeholder"] );
 		sprite->setPosition(200,100);
+
+		shader = asset.shaders["fader"].get();
 		//sprite.setScale(8,4);
 	}
 
@@ -95,7 +98,8 @@ public:
 				// dialogue.front()
 				//this scene back()
 
-				dialogue.advance( sprite->dialogue_id );
+				dialogue.activate( sprite->dialogue_id );
+				defocus();
 
 				return true;
 			}
@@ -105,11 +109,34 @@ public:
 
 	void update()
 	{
+		if (m_focus)
+		{
+			if (saturation < saturation_refocus) saturation += 0.01f;
+			if (value      < value_refocus     ) value      += 0.001f;
+		}
+		else
+		{
+			if (saturation > saturation_defocus) saturation -= 0.01f;
+			if (value      > value_defocus     ) value      -= 0.001f;
+		}
 
+		shader->setParameter("saturation", saturation);
+		shader->setParameter("value", value);
+	}
+
+	void focus()
+	{
+		m_focus = true;
+	}
+
+	void defocus()
+	{
+		m_focus = false;
 	}
 
 	void draw(sf::RenderTarget& target, sf::RenderStates states) const
 	{
+		states.shader = shader; //->setParameter("myvar", 5.f);
 		for (auto& sprite : sprites)
 		{
 			target.draw(*sprite, states);
@@ -120,6 +147,17 @@ public:
 
 private:
 
+	float saturation = 1.0f;
+	float saturation_defocus = 0.2f;
+	float saturation_refocus = 1.0f;
+
+	float value = 1.0f;
+	float value_defocus = 0.8f;
+	float value_refocus = 1.0f;
+
+	sf::Shader* shader;
+
+	bool m_focus = true;
 	Asset& asset;
 	Dialogue& dialogue;
 	Persist& persist;
