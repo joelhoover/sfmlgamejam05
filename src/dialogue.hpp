@@ -56,7 +56,7 @@ public:
 		{
 			data.push_back( entry_pair.second->save() );
 		}
-		shrapx::save_text(file_name, data.dump(3));
+		shrapx::save_text(file_name, data.dump(1));
 	}
 
 	void update()
@@ -128,11 +128,24 @@ public:
 		reset_text();
 	}
 
-	void activate_highlighted()
+	void activate_highlighted_or_default()
 	{
 		if ( !m_text_fill_complete ) return;
 
-		if ( m_highlighted_line == 0 )
+		Speech* speech = get_entry();
+		if (speech == nullptr)
+		{
+			deactivate();
+			return;
+		}
+
+		// default to 1 reply if 1 reply
+		if (speech->replies.size() == 1)
+		{
+			m_highlighted_line = 1;
+		}
+
+		if ( speech->replies.size() == 0 || m_highlighted_line == 0 )
 		{
 			deactivate();
 			return;
@@ -183,18 +196,13 @@ public:
 		if (selected == nullptr) return;
 
 		texts.clear();
-		//shapes_debug.clear();
 
-		// +1 reason. zero is the main speech
-
-		// one additional text for end_dialogue only
 		{
 			std::unique_ptr<sf::Text> text = std::make_unique<sf::Text>();
 			texts.emplace_back(std::move(text));
 
 			std::unique_ptr<sf::Sprite> spr = std::make_unique<sf::Sprite>();
 			spr->setTexture(*asset.textures["box"]);
-			//shapes_debug.emplace_back(std::move(spr));
 		}
 
 		if ( selected->replies.size() )
@@ -206,7 +214,6 @@ public:
 
 				std::unique_ptr<sf::Sprite> spr = std::make_unique<sf::Sprite>();
 				spr->setTexture(*asset.textures["box"]);
-				//shapes_debug.emplace_back(std::move(spr));
 			}
 		}
 	}
@@ -216,8 +223,8 @@ public:
 		Speech* selected = entries[m_active_speech_id].get();
 		if (selected == nullptr) return;
 		if ( texts.size() == 0 ) return;
-		uint pos_x = 15;
-		uint pos_y = 0;
+		uint pos_x = 60;
+		uint pos_y = 45;
 		// speech text
 		{
 			std::string str = selected->text;
@@ -237,8 +244,8 @@ public:
 				if (m_text_fill_counter < strsize)
 				{
 					str = str.substr(0, m_text_fill_counter);
-					m_text_fill_counter++;
-					if (m_text_fill_counter == strsize) m_text_fill_complete = true;
+					m_text_fill_counter += m_text_fill_rate;
+					if (m_text_fill_counter >= strsize) m_text_fill_complete = true;
 				}
 				set_deselected(text);
 			}
@@ -250,7 +257,7 @@ public:
 				cursor.setPosition( text->findCharacterPos(m_cursor_position) );
 			}
 
-			text->setPosition(pos_x, 0);
+			text->setPosition(pos_x, pos_y);
 
 			//sf::Sprite* spr = static_cast<sf::Sprite*>(shapes_debug.front().get());
 			//spr->setScale(text->getGlobalBounds().width/16.0f, text->getGlobalBounds().height/16.0f);
@@ -261,7 +268,7 @@ public:
 		if ( selected->replies.size() == 0 ) return;
 
 		// start height: center of screen
-		pos_y = ZOOM_H/2;
+		pos_y = 15 + (ZOOM_H/2);
 
 		for ( uint text_id=1; text_id<(selected->replies.size()+1); ++text_id )
 		{
@@ -411,9 +418,9 @@ public:
 		text->setCharacterSize(char_size);
 
 		if (m_edit)
-			text->setColor( sf::Color(255,127,127,255) );
+			text->setColor( sf::Color(255,160,127,255) );
 		else
-			text->setColor( sf::Color(127,127,255,255) );
+			text->setColor( sf::Color(127,160,255,255) );
 
 		//text->setFillColor( sf::Color(127,127,127,255) );
 		//text->setOutlineColor( sf::Color(255,127,127,255) );
@@ -424,7 +431,8 @@ public:
 	{
 		text->setFont(*default_font);
 		text->setCharacterSize(char_size);
-		text->setColor( sf::Color(127,127,127,255) );
+		//text->setColor( sf::Color(127,127,127,255) );
+		text->setColor( sf::Color(160,192,192,255) );
 		//text->setFillColor( sf::Color(127,127,127,255) );
 		//text->setOutlineColor( sf::Color(255,127,127,255) );
 		//text->setOutlineThickness(0);
@@ -454,7 +462,8 @@ public:
 
 private:
 
-	uint m_text_fill_counter = 0;
+	float m_text_fill_counter = 0;
+	float m_text_fill_rate = 0.25f;
 	bool m_text_fill_complete = false;
 
 	uint m_active_speech_id = 0;

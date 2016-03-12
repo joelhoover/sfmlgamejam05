@@ -23,6 +23,8 @@ set(SRC
 "src/main.cpp"
 
 "src/Group.hpp"
+"src/sfml_vector_math.hpp"
+
 "src/json.hpp"
 "src/common.hpp"
 "src/asset.hpp"
