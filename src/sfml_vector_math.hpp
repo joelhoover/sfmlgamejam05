@@ -14,6 +14,14 @@ sf::Vector2<T> Normalize(const sf::Vector2<T>& source)
 		return source;
 }
 
+template<typename T>
+sf::Vector2<T> Distance(const sf::Vector2<T>& a, const sf::Vector2<T>& b)
+{
+	T dx = a.x - b.x;
+	T dy = a.y - b.y;
+	return sqrt( dx * dx  + dy * dy);
+}
+
 }
 
 #endif // _SFML_VECTOR_MATH_HPP_
