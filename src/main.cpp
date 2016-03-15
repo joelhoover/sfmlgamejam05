@@ -110,8 +110,11 @@ int main()
 	player->setOrigin(32,64);
 	player->setScale(0.333f,0.333f);
 	player->setPosition(630,430);
-	player->frames = 4;
 
+	player->frame_rects.emplace("walk", std::vector<sf::IntRect>());
+	player->frame_rects.emplace("idle", std::vector<sf::IntRect>());
+	player->frame_rects["walk"] = { {0,0,64,64}, {64,0,64,64}, {128,0,64,64}, {192,0,64,64} };
+	player->frame_rects["idle"] = { {0,0,64,64} };
 	scene->follow_sprite = player;
 
 	// dialogue test sprite
