@@ -34,23 +34,25 @@ public:
 
 	sf::Vector2i scene_to_map_xy(const sf::Vector2f& pos) const
 	{
-		sf::Vector2i pos2 = sf::Vector2i( static_cast<uint>(pos.x) >> tile_shift, static_cast<uint>(pos.y) >> tile_shift);
-
-		// constrain to size limits
-		pos2.x = (pos2.x < 0) ? 0 : (pos2.x < map_width) ? pos2.x : map_width;
-		pos2.y = (pos2.y < 0) ? 0 : (pos2.y < map_width) ? pos2.y : map_width;
-
-		return pos2;
+		return sf::Vector2i( static_cast<uint>(pos.x) >> tile_shift, static_cast<uint>(pos.y) >> tile_shift);
 	}
 
-	uint map_xy_to_address(const sf::Vector2i& pos) const
+	sf::Vector2i clean_map_xy(sf::Vector2i pos) const
+	{
+		// constrain to size limits
+		pos.x = (pos.x < 0) ? 0 : (pos.x < map_width) ? pos.x : map_width;
+		pos.y = (pos.y < 0) ? 0 : (pos.y < map_width) ? pos.y : map_width;
+		return pos;
+	}
+
+	uint map_xy_to_address(sf::Vector2i pos) const
 	{
 		return pos.x + pos.y * map_width;
 	}
 
 	uint scene_to_address( const sf::Vector2f& pos) const
 	{
-		return map_xy_to_address(scene_to_map_xy(pos));
+		return map_xy_to_address(clean_map_xy(scene_to_map_xy(pos)));
 	}
 
 	sf::Vector2i address_to_map_xy( uint addr ) const

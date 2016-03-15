@@ -7,6 +7,8 @@
 
 #include "tilemap.hpp"
 
+#include <iostream>
+#include <deque>
 #include <vector>
 #include <algorithm>
 
@@ -38,10 +40,15 @@ class PathFind
 
 public:
 
-	std::vector<sf::Vector2f> find_path(TileMap* tilemap)
+	std::vector<sf::Vector2f> find_path(const sf::Vector2f& in_start_pos, const sf::Vector2f& in_end_pos, TileMap* tilemap)
 	{
-		list_open.clear();
-		list_closed.clear();
+		sf::Vector2i start_pos = tilemap->scene_to_map_xy(in_start_pos);
+		sf::Vector2i end_pos   = tilemap->scene_to_map_xy(in_end_pos);
+
+		if ( tilemap->get(tilemap->map_xy_to_address(end_pos)) ) return {};
+
+		std::deque<std::unique_ptr<PathNode>> list_open;
+		std::vector<std::unique_ptr<PathNode>> list_closed;
 
 		float dist = sf::ManhattenDistance(start_pos, end_pos);
 
@@ -53,7 +60,7 @@ public:
 			std::sort(list_open.begin(), list_open.end(),
 			[] (const std::unique_ptr<PathNode>& a, const std::unique_ptr<PathNode>& b)
 			{
-				return b->fcost < a->fcost;
+				return a->fcost < b->fcost;
 			});
 
 			PathNode* current = list_open.front().get();
@@ -65,12 +72,14 @@ public:
 				//the start tile has a null parent
 				while ( current->parent != nullptr )
 				{
-					path.emplace_back( tilemap->address_to_scene(current->address) );
+					path.emplace_back( tilemap->map_xy_to_scene(current->pos));
 					current = current->parent;
 				}
 
 				list_open.clear();
 				list_closed.clear();
+
+				std::cout << path.size() << std::endl;
 				return path;
 			}
 
@@ -89,15 +98,17 @@ public:
 
 				int xi = (i%3) - 1;
 				int yi = (i/3) - 1;
-				sf::Vector2i adj_pos = cur_pos + sf::Vector2i(xi, yi);
-
+				sf::Vector2i adj_pos = tilemap->clean_map_xy(cur_pos + sf::Vector2i(xi, yi) );
 				// skip blocked tile
-				if ( tilemap->get(tilemap->map_xy_to_address(adj_pos)) ) continue;
+				if ( tilemap->get( tilemap->map_xy_to_address(adj_pos)))
+				{
+					continue;
+				}
 
 				float gcost = current->gcost + sf::ManhattenDistance(cur_pos, adj_pos);
 				float hcost = sf::ManhattenDistance(adj_pos, end_pos);
 
-				// skips tiles already visited (in closed list)
+				// skips tiles already closed (in closed list)
 				if (vector_in_list(list_closed, adj_pos) && gcost >= current->gcost)
 				{
 					continue;
@@ -105,17 +116,16 @@ public:
 
 				if ( !vector_in_list(list_open, adj_pos) || gcost < current->gcost)
 				{
-					std::unique_ptr<PathNode> node = std::make_unique<PathNode>(adj_pos, current, gcost, hcost);
-					list_open.emplace_back(std::move(node));
+					list_open.push_back(std::move( std::make_unique<PathNode>(adj_pos, current, gcost, hcost) ));
 				}
 			}
 		}
-
 		list_closed.clear();
 		return {};
 	}
 
-	static bool vector_in_list(const std::vector<std::unique_ptr<PathNode>>& list, const sf::Vector2i& pos)
+	template<typename T>
+	static bool vector_in_list(const T& list, const sf::Vector2i& pos)
 	{
 		for ( auto& node : list )
 		{
@@ -124,6 +134,7 @@ public:
 		return false;
 	}
 
+	/*
 	static bool address_in_list(const std::vector<std::unique_ptr<PathNode>>& list, uint address)
 	{
 		for ( auto& node : list )
@@ -132,18 +143,7 @@ public:
 		}
 		return false;
 	}
-
-	//TileMap* tilemap;
-	//PathNode* current;
-	//uint start_address;
-	//uint end_address;
-
-	sf::Vector2i start_pos;
-	sf::Vector2i end_pos;
-
-	std::vector<std::unique_ptr<PathNode>> list_open;
-	std::vector<std::unique_ptr<PathNode>> list_closed;
-
+	*/
 };
 
 #endif // _PATHFIND_HPP_

@@ -13,6 +13,7 @@
 #include "tilemap.hpp"
 #include "pathfind.hpp"
 
+#include <iostream>
 #include <vector>
 #include <memory>
 
@@ -35,9 +36,9 @@ public:
 			auto diff_pos = target_pos - current_pos;
 
 			float distance = sf::ManhattenDistance(target_pos, current_pos);
-			if (distance > 5)
+			if (distance > 2)
 			{
-				setPosition(sf::Normalize(target_pos - current_pos));
+				move(sf::Normalize(target_pos - current_pos));
 			}
 			else
 			{
@@ -140,10 +141,10 @@ public:
 
 	void frob(sf::Vector2f pos_in_world)
 	{
-		auto pos = mouse_to_scene(pos_in_world);
+		auto mouse_scene_pos = mouse_to_scene(pos_in_world);
 		for (auto& sprite : sprites)
 		{
-			if ( sprite->getGlobalBounds().contains( pos ) )
+			if ( sprite->getGlobalBounds().contains( mouse_scene_pos ) )
 			{
 				if (sprite->use_speech)
 				{
@@ -159,11 +160,9 @@ public:
 		// give sprite a path to mouse target
 		MegaSprite* sprite = sprites.front().get();
 
-		PathFind pf  = PathFind();
-		pf.start_pos = tilemap->scene_to_map_xy(pos);
-		pf.end_pos   = tilemap->scene_to_map_xy(pos);
+		PathFind pf = PathFind();
 
-		sprite->grid_path = pf.find_path(tilemap.get());
+		sprite->grid_path = pf.find_path(sprite->getPosition(), mouse_scene_pos, tilemap.get());
 	}
 
 	sf::Vector2f mouse_to_scene(const sf::Vector2f& pos)
@@ -202,7 +201,7 @@ public:
 		shader->setParameter("saturation", saturation);
 		shader->setParameter("value", value);
 
-		// follow a sprite
+		// view follows a sprite
 		if (follow_sprite != nullptr)
 		{
 			sf::Vector2f pos = follow_sprite->getPosition();
@@ -217,10 +216,10 @@ public:
 			}
 			else
 			{
-				if      ( diff.x < -ZOOM_WQ ) view_change.x -= 0.1f;
-				else if ( diff.x > +ZOOM_WQ ) view_change.x += 0.1f;
-				if      ( diff.y < -ZOOM_HQ ) view_change.y -= 0.1f;
-				else if ( diff.y > +ZOOM_HQ ) view_change.y += 0.1f;
+				if      ( diff.x < -ZOOM_WQ ) view_change.x -= 0.5f;
+				else if ( diff.x > +ZOOM_WQ ) view_change.x += 0.5f;
+				if      ( diff.y < -ZOOM_HQ ) view_change.y -= 0.5f;
+				else if ( diff.y > +ZOOM_HQ ) view_change.y += 0.5f;
 
 				view.move( view_change );
 			}
@@ -245,8 +244,8 @@ public:
 			sprite->update();
 		}
 
-		// constrain all sprite movement to grid
-		for (auto& sprite : sprites)
+		// constrain sprite movement to grid
+		/*for (auto& sprite : sprites)
 		{
 			auto pos = sprite->getPosition();
 
@@ -255,7 +254,7 @@ public:
 				sprite->setPosition(sprite->pos_last);
 			else
 				sprite->pos_last = pos;
-		}
+		}*/
 	}
 
 	void focus()

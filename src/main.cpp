@@ -105,8 +105,8 @@ int main()
 	MegaSprite* player = scene->sprites.back().get();
 	player->setTexture( *asset.textures["player"] );
 	player->setTextureRect( {0,0,16,16} );
-	player->setOrigin(8,8);
-	player->setPosition(690,430);
+	player->setOrigin(8,14);
+	player->setPosition(630,430);
 
 	scene->follow_sprite = player;
 
