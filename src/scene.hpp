@@ -26,12 +26,27 @@ public:
 	{
 		if ( grid_path.size() )
 		{
-
 			// follow next path point
+			auto current_pos = getPosition();
+			auto target_pos  = grid_path.back();
+			target_pos.x += 4;
+			target_pos.y += 4;
+
+			auto diff_pos = target_pos - current_pos;
+
+			float distance = sf::ManhattenDistance(target_pos, current_pos);
+			if (distance > 5)
+			{
+				setPosition(sf::Normalize(target_pos - current_pos));
+			}
+			else
+			{
+				grid_path.pop_back();
+			}
 		}
 	}
 
-	std::vector<uint> grid_path;
+	std::vector<sf::Vector2f> grid_path;
 
 	sf::Vector2f pos_last;
 	uint speech_id;
@@ -117,11 +132,9 @@ public:
 				{
 					if (current_type == ut) return current_type;
 				}
-
 				return sprite->use_types.size() ? sprite->use_types.front() : current_type;
 			}
 		}
-
 		return current_type;
 	}*/
 
@@ -135,16 +148,22 @@ public:
 				if (sprite->use_speech)
 				{
 					defocus();
-
 					dialogue.activate( sprite->speech_id );
-
 					// player and dialogue-subject to enter dialogue mode
 					//   stop moving, face each other, change animation
-
 					return;
 				}
 			}
 		}
+
+		// give sprite a path to mouse target
+		MegaSprite* sprite = sprites.front().get();
+
+		PathFind pf  = PathFind();
+		pf.start_pos = tilemap->scene_to_map_xy(pos);
+		pf.end_pos   = tilemap->scene_to_map_xy(pos);
+
+		sprite->grid_path = pf.find_path(tilemap.get());
 	}
 
 	sf::Vector2f mouse_to_scene(const sf::Vector2f& pos)
@@ -210,6 +229,7 @@ public:
 		// individual updates
 		for (auto& sprite : sprites)
 		{
+			/*
 			if ( sprite->grid_path.size() )
 			{
 				// follow next path point
@@ -220,6 +240,7 @@ public:
 
 				sprite->move( sf::Normalize(pos) );
 			}
+			*/
 
 			sprite->update();
 		}
@@ -230,7 +251,7 @@ public:
 			auto pos = sprite->getPosition();
 
 			//uint apos = uint(pos.x/tile_size) + uint(pos.y/tile_size) * grid_size;
-			if ( tilemap->grid[ tilemap->scene_to_address(pos) ] )
+			if ( tilemap->grid[tilemap->scene_to_address(pos)] )
 				sprite->setPosition(sprite->pos_last);
 			else
 				sprite->pos_last = pos;

@@ -38,14 +38,10 @@ class PathFind
 
 public:
 
-	std::vector<uint> find_path(TileMap* tilemap)
+	std::vector<sf::Vector2f> find_path(TileMap* tilemap)
 	{
 		list_open.clear();
 		list_closed.clear();
-
-		//float dist = sf::ManhattenDistance(start_pos, end_pos);
-		//float dist = sf::ManhattenDistance(tilemap->map_xy_to_scene(start_pos), tilemap->map_xy_to_scene(end_pos));
-		//float dist = sf::ManhattenDistance(tilemap->map_xy_to_address(start_pos), tilemap->map_xy_to_address(end_pos));
 
 		float dist = sf::ManhattenDistance(start_pos, end_pos);
 
@@ -64,13 +60,13 @@ public:
 
 			if ( current->pos == end_pos )
 			{
-				std::vector<uint> path;
+				std::vector<sf::Vector2f> path;
+
+				//the start tile has a null parent
 				while ( current->parent != nullptr )
 				{
-					//path.emplace_back( tilemap->scene_to_address(current->pos) );
-					path.emplace_back( current->address );
-
-					current = current->parent; //only start tile is null parent
+					path.emplace_back( tilemap->address_to_scene(current->address) );
+					current = current->parent;
 				}
 
 				list_open.clear();
@@ -85,46 +81,34 @@ public:
 
 			for ( uint i=0; i<9; ++i )
 			{
+				// skip current tile
 				if (i == 4) continue;
 
 				// TODO work with tile array indices or store Vector2i?
-				// uint current_index = current->pos;
-				// auto cur_pos = tilemap->address_to_scene(current->pos)
-				// auto cur_pos = tilemap->map_xy_to_scene(current->pos);
-
 				sf::Vector2i cur_pos = current->pos;
 
 				int xi = (i%3) - 1;
 				int yi = (i/3) - 1;
-
 				sf::Vector2i adj_pos = cur_pos + sf::Vector2i(xi, yi);
 
+				// skip blocked tile
 				if ( tilemap->get(tilemap->map_xy_to_address(adj_pos)) ) continue;
-
-				//if ( tilemap->get(tilemap->map_xy_to_address(adj_pos))) continue;
-				//if (adj == nullptr) continue;
-				//if (adj->is_collideable()) continue;
 
 				float gcost = current->gcost + sf::ManhattenDistance(cur_pos, adj_pos);
 				float hcost = sf::ManhattenDistance(adj_pos, end_pos);
 
-				std::unique_ptr<PathNode> node = std::make_unique<PathNode>(adj_pos, current, gcost, hcost);
-
-				// TODO consider address_in_list instead
-				if (vector_in_list(list_closed, adj_pos) && gcost >= current->gcost) // or node->gcost ?
+				// skips tiles already visited (in closed list)
+				if (vector_in_list(list_closed, adj_pos) && gcost >= current->gcost)
 				{
 					continue;
 				}
 
-				if ( !vector_in_list(list_open, adj_pos) || gcost < current->gcost) // or node->gcost ?
+				if ( !vector_in_list(list_open, adj_pos) || gcost < current->gcost)
 				{
-					list_open.emplace_back( std::move(node) );
+					std::unique_ptr<PathNode> node = std::make_unique<PathNode>(adj_pos, current, gcost, hcost);
+					list_open.emplace_back(std::move(node));
 				}
-
 			}
-			// skips current tile
-			// skips blocked tiles
-			// skips tiles already visited (in closed list)
 		}
 
 		list_closed.clear();
