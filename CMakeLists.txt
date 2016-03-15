@@ -32,6 +32,8 @@ set(SRC
 "src/speech.hpp"
 
 "src/dialogue.hpp"
+"src/tilemap.hpp"
+"src/pathfind.hpp"
 "src/scene.hpp"
 )
 

@@ -10,6 +10,9 @@
 #include "persist.hpp"
 #include "dialogue.hpp"
 
+#include "tilemap.hpp"
+#include "pathfind.hpp"
+
 #include <vector>
 #include <memory>
 
@@ -23,6 +26,7 @@ public:
 	{
 		if ( grid_path.size() )
 		{
+
 			// follow next path point
 		}
 	}
@@ -53,8 +57,6 @@ public:
 
 		shader = asset.shaders["fader"].get();
 
-		world_grid.resize(grid_size*grid_size, false);
-
 		edit_tile_texture = asset.textures["box"].get();
 	}
 
@@ -62,14 +64,16 @@ public:
 	{
 		json data = shrapx::load_json(file_name);
 
-		world_grid.clear();
+		tilemap.reset();
+
+		tilemap = std::make_unique<TileMap>( data["grid_size"].get<uint>(), 8 );
 
 		for (auto& element : data["collision"])
 		{
-			world_grid.push_back( element.get<uint>() );
+			tilemap->grid.push_back( element.get<uint>() );
 		}
 
-		assert( world_grid.size() == (grid_size*grid_size) );
+		assert( tilemap->grid.size() == tilemap->map_area );
 
 		scene_file = data["bg"].get<std::string>();
 
@@ -79,8 +83,9 @@ public:
 	void save_to_file(const std::string& file_name)
 	{
 		json data;
+		data["grid_size"] = tilemap->map_width;
 		data["collision"] = json::array();
-		for (bool element : world_grid)
+		for (bool element : tilemap->grid)
 		{
 			data["collision"].push_back( element?1:0 );
 		}
@@ -90,7 +95,7 @@ public:
 		shrapx::save_text(file_name, data.dump(1));
 	}
 
-	MegaSprite* frob_has_sprite(sf::Vector2f pos_in_world)
+	MegaSprite* frob_has_sprite(const sf::Vector2f& pos_in_world)
 	{
 		for (auto& sprite : sprites)
 		{
@@ -147,32 +152,18 @@ public:
 		return view.getCenter() + pos - sf::Vector2f(ZOOM_WH, ZOOM_HH);
 	}
 
-	uint scene_to_address(sf::Vector2f pos)
-	{
-		// constrain pos to within grid
-		pos.x = (pos.x < 0) ? 0 : (pos.x < grid_size*tile_size) ? pos.x : (grid_size*tile_size)-1;
-		pos.y = (pos.y < 0) ? 0 : (pos.y < grid_size*tile_size) ? pos.y : (grid_size*tile_size)-1;
-
-		// constrain to nearest unblocked grid?
-		return uint(pos.x/tile_size) + uint(pos.y/tile_size) * grid_size;
-	}
-
-	sf::Vector2f address_to_scene( uint addr )
-	{
-		return sf::Vector2f( (addr%grid_size) * tile_size, + (addr/tile_size) * grid_size);
-
-	}
-
 	void toggle_grid_location(const sf::Vector2f& pos)
 	{
-		uint apos = scene_to_address( mouse_to_scene(pos) );
-		world_grid[apos] = !world_grid[apos];
+		uint apos = tilemap->scene_to_address( mouse_to_scene(pos) );
+
+		tilemap->toggle( apos );
 	}
 
 	void set_grid_location(const sf::Vector2f& pos, bool new_val)
 	{
-		uint apos = scene_to_address( mouse_to_scene(pos) );
-		world_grid[apos] = new_val;
+		uint apos = tilemap->scene_to_address( mouse_to_scene(pos) );
+
+		tilemap->set(apos, new_val);
 	}
 
 	void update()
@@ -192,11 +183,9 @@ public:
 		shader->setParameter("saturation", saturation);
 		shader->setParameter("value", value);
 
-
 		// follow a sprite
 		if (follow_sprite != nullptr)
 		{
-
 			sf::Vector2f pos = follow_sprite->getPosition();
 			sf::Vector2f diff = pos - view.getCenter();
 			sf::Vector2f view_change;
@@ -225,7 +214,7 @@ public:
 			{
 				// follow next path point
 
-				auto pos = sprite->getPosition() - address_to_scene( sprite->grid_path.back() );
+				auto pos = sprite->getPosition() - tilemap->address_to_scene( sprite->grid_path.back() );
 				pos.x += 4;
 				pos.y += 4;
 
@@ -241,7 +230,7 @@ public:
 			auto pos = sprite->getPosition();
 
 			//uint apos = uint(pos.x/tile_size) + uint(pos.y/tile_size) * grid_size;
-			if ( world_grid[ scene_to_address(pos) ] )
+			if ( tilemap->grid[ tilemap->scene_to_address(pos) ] )
 				sprite->setPosition(sprite->pos_last);
 			else
 				sprite->pos_last = pos;
@@ -276,14 +265,15 @@ public:
 			edit_tile.setColor(sf::Color::Magenta);
 			edit_tile.setTexture( *edit_tile_texture );
 
-			for (uint it = 0; it < world_grid.size(); ++it)
+			for (uint it = 0; it < tilemap->grid.size(); ++it)
 			{
-				sf::Vector2f pos = sf::Vector2f( uint(it % grid_size) * tile_size, uint(it / grid_size) * tile_size );
+				sf::Vector2f pos = tilemap->address_to_scene(it);
 
-				if ( (pos.x > view.getCenter().x-ZOOM_WH && pos.x < view.getCenter().x+ZOOM_WH+8) &&
-						 (pos.y > view.getCenter().y-ZOOM_HH && pos.y < view.getCenter().y+ZOOM_HH+8) && world_grid[it])
+				if (
+	(pos.x > view.getCenter().x-ZOOM_WH && pos.x < view.getCenter().x+ZOOM_WH+8) &&
+	(pos.y > view.getCenter().y-ZOOM_HH && pos.y < view.getCenter().y+ZOOM_HH+8) && tilemap->grid[it])
 				{
-					//sf::Color col = world_grid[it] ? sf::Color::Magenta : sf::Color::Cyan;
+					//sf::Color col = tilemap->grid[it] ? sf::Color::Magenta : sf::Color::Cyan;
 					//edit_tile.setColor(col);
 					edit_tile.setPosition(pos);
 
@@ -295,9 +285,7 @@ public:
 
 	std::vector<std::unique_ptr<MegaSprite>> sprites;
 
-	uint grid_size = 128;
-	uint tile_size = 8;
-	std::vector<bool> world_grid;
+	std::unique_ptr<TileMap> tilemap;
 	std::string scene_file = "scene_unnamed";
 	sf::Sprite sprite_bg;
 
@@ -327,7 +315,6 @@ private:
 	float value_defocus = 0.8f;
 	float value_refocus = 1.0f;
 
-	//sf::Sprite edit_tile;
 	sf::Texture* edit_tile_texture;
 	sf::Shader* shader;
 
