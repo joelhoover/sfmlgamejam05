@@ -103,10 +103,14 @@ int main()
 	// player sprite
 	scene->sprites.emplace_back( std::make_unique<MegaSprite>() );
 	MegaSprite* player = scene->sprites.back().get();
+	asset.textures["player"]->setSmooth(true);
 	player->setTexture( *asset.textures["player"] );
-	player->setTextureRect( {0,0,16,16} );
-	player->setOrigin(8,14);
+
+	player->setTextureRect( {0,0,64,64} );
+	player->setOrigin(32,64);
+	player->setScale(0.333f,0.333f);
 	player->setPosition(630,430);
+	player->frames = 4;
 
 	scene->follow_sprite = player;
 
@@ -123,6 +127,7 @@ int main()
 	uint edit_collision_tiles = 2;
 	bool edit_mode = false;
 
+	uint time = 0;
 	while(terminate == false)
 	{
 		while(window.pollEvent(event) == true)
@@ -310,7 +315,7 @@ int main()
 
 		dialogue.update();
 
-		scene->update();
+		scene->update(time);
 
 		//view.setCenter( scene->view_pos );
 		//scene->view_pos = view.getCenter();
@@ -339,6 +344,8 @@ int main()
 		window.draw(renderscenesprite);
 		window.draw(renderuisprite);
 		window.display();
+
+		++time;
 	}
 
 	return 0;

@@ -34,6 +34,7 @@ set(SRC
 "src/dialogue.hpp"
 "src/tilemap.hpp"
 "src/pathfind.hpp"
+"src/megasprite.hpp"
 "src/scene.hpp"
 )
 

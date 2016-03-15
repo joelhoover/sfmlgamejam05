@@ -12,47 +12,12 @@
 
 #include "tilemap.hpp"
 #include "pathfind.hpp"
+#include "megasprite.hpp"
 
 #include <iostream>
 #include <vector>
 #include <memory>
 
-
-class MegaSprite : public sf::Sprite
-{
-
-public:
-
-	virtual void update()
-	{
-		if ( grid_path.size() )
-		{
-			// follow next path point
-			auto current_pos = getPosition();
-			auto target_pos  = grid_path.back();
-			target_pos.x += 4;
-			target_pos.y += 4;
-
-			auto diff_pos = target_pos - current_pos;
-
-			float distance = sf::ManhattenDistance(target_pos, current_pos);
-			if (distance > 2)
-			{
-				move(sf::Normalize(target_pos - current_pos));
-			}
-			else
-			{
-				grid_path.pop_back();
-			}
-		}
-	}
-
-	std::vector<sf::Vector2f> grid_path;
-
-	sf::Vector2f pos_last;
-	uint speech_id;
-	bool use_speech = false;
-};
 
 class Scene : public sf::Drawable
 {
@@ -184,7 +149,7 @@ public:
 		tilemap->set(apos, new_val);
 	}
 
-	void update()
+	void update(uint time)
 	{
 		// shader uniforms
 		if (m_focus)
@@ -200,6 +165,10 @@ public:
 
 		shader->setParameter("saturation", saturation);
 		shader->setParameter("value", value);
+
+		shader->setParameter("time", time);
+
+
 
 		// view follows a sprite
 		if (follow_sprite != nullptr)
