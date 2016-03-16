@@ -103,18 +103,26 @@ int main()
 	// player sprite
 	scene->sprites.emplace_back( std::make_unique<MegaSprite>() );
 	MegaSprite* player = scene->sprites.back().get();
-	asset.textures["player"]->setSmooth(true);
+	//asset.textures["player"]->setSmooth(true);
 	player->setTexture( *asset.textures["player"] );
 
 	player->setTextureRect( {0,0,64,64} );
 	player->setOrigin(32,64);
-	player->setScale(0.333f,0.333f);
+	player->setScale(0.45f,0.45f);
 	player->setPosition(630,430);
 
-	player->frame_rects.emplace("walk", std::vector<sf::IntRect>());
-	player->frame_rects.emplace("idle", std::vector<sf::IntRect>());
-	player->frame_rects["walk"] = { {0,0,64,64}, {64,0,64,64}, {128,0,64,64}, {192,0,64,64} };
-	player->frame_rects["idle"] = { {0,0,64,64} };
+	player->frame_rects.emplace( "walk_left_up",   std::vector<sf::IntRect>() );
+	player->frame_rects.emplace( "walk_left_down", std::vector<sf::IntRect>() );
+	player->frame_rects.emplace( "walk_right_up",  std::vector<sf::IntRect>() );
+	player->frame_rects.emplace( "walk_right_down",  std::vector<sf::IntRect>() );
+	player->frame_rects.emplace( "idle",           std::vector<sf::IntRect>() );
+
+	player->frame_rects["walk_left_up"    ] = { {0,   0,  64,  64}, {64,   0, 64,  64}, {128,   0, 64,  64}, {192,   0, 64, 64} };
+	player->frame_rects["walk_left_down"  ] = { {0,  64,  64,  64}, {64,  64, 64,  64}, {128,  64, 64,  64}, {192,  64, 64, 64} };
+	player->frame_rects["walk_right_up"   ] = { {0, 128,  64,  64}, {64, 128, 64,  64}, {128, 128, 64,  64}, {192, 128, 64, 64} };
+	player->frame_rects["walk_right_down" ] = { {0, 192,  64,  64}, {64, 192, 64,  64}, {128, 192, 64,  64}, {192, 192, 64, 64} };
+	player->frame_rects["idle"            ] = { {0, 256,  64,  64}, {64, 256, 64,  64}, {128, 256, 64,  64}, {192, 256, 64, 64} };
+
 	scene->follow_sprite = player;
 
 	// dialogue test sprite

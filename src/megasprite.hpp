@@ -5,6 +5,7 @@
 
 #include "sfml_vector_math.hpp"
 
+#include <cmath>
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -38,28 +39,31 @@ public:
 
 			// walk anim
 			if (diff_pos.x < 0)
-				animate("walk_left");
+				if (diff_pos.y < 0)
+					animate(frame_rects["walk_left_up"]);
+				else
+					animate(frame_rects["walk_left_down"]);
 			else
-				animate("walk_right");
+				if (diff_pos.y < 0)
+					animate(frame_rects["walk_right_up"]);
+				else
+					animate(frame_rects["walk_right_down"]);
 		}
 		else
 		{
 			// idle anim
-			animate("idle");
+			animate(frame_rects["idle"]);
 		}
 	}
 
-	void animate(const std::string& anim_name)
+	void animate(std::vector<sf::IntRect>& rects)
 	{
-		if ( frame_rects.find( anim_name ) == frame_rects.end() ) return;
-
-		if ( frame_rects[anim_name].size() )
+		if ( rects.size() )
 		{
 
-			frame += anim_speed;
-			if (frame > frame_rects[anim_name].size()) frame = static_cast<uint>(frame) % frame_rects[anim_name].size();
+			frame = std::fmod(frame + anim_speed, rects.size());
 
-			setTextureRect( frame_rects[anim_name][ static_cast<uint>(frame) ] );
+			setTextureRect( rects[ static_cast<uint>(frame) ] );
 		}
 	}
 
