@@ -104,8 +104,11 @@ public:
 		return current_type;
 	}*/
 
-	void frob(sf::Vector2f pos_in_world)
+	void frob( const sf::Vector2f& pos_in_world)
 	{
+		bool got_id = false;
+		SpeechID speech_id = 0;
+
 		auto mouse_scene_pos = mouse_to_scene(pos_in_world);
 		for (auto& sprite : sprites)
 		{
@@ -113,11 +116,14 @@ public:
 			{
 				if (sprite->use_speech)
 				{
-					defocus();
-					dialogue.activate( sprite->speech_id );
+
 					// player and dialogue-subject to enter dialogue mode
 					//   stop moving, face each other, change animation
-					return;
+
+					got_id = true;
+					speech_id = sprite->speech_id;
+
+					break;
 				}
 			}
 		}
@@ -125,9 +131,21 @@ public:
 		// give sprite a path to mouse target
 		MegaSprite* sprite = sprites.front().get();
 
-		PathFind pf = PathFind();
+		// distance
+		if (sf::ManhattenDistance(mouse_scene_pos, sprite->getPosition()) < DIALOGUE_DISTANCE)
+		{
+			if(got_id)
+			{
+				defocus();
+				dialogue.activate( speech_id );
+			}
+		}
+		else
+		{
+			PathFind pf = PathFind();
+			sprite->grid_path = pf.find_path(sprite->getPosition(), mouse_scene_pos, tilemap.get());
+		}
 
-		sprite->grid_path = pf.find_path(sprite->getPosition(), mouse_scene_pos, tilemap.get());
 	}
 
 	sf::Vector2f mouse_to_scene(const sf::Vector2f& pos)

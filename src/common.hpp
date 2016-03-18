@@ -11,6 +11,9 @@
 #define ZOOM_WQ ZOOM_WH/2
 #define ZOOM_HQ ZOOM_HH/2
 
+#define WALK_DISTANCE 2.0f
+#define DIALOGUE_DISTANCE 14.0f
+
 using uint = unsigned int;
 
 enum : uint { USE_DEFAULT, USE_WALK, USE_SPEECH };

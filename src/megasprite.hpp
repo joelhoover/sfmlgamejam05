@@ -28,7 +28,7 @@ public:
 			auto diff_pos = target_pos - current_pos;
 
 			float distance = sf::ManhattenDistance(target_pos, current_pos);
-			if (distance > 1)
+			if (distance > WALK_DISTANCE)
 			{
 				move( sf::Normalize(target_pos - current_pos) * move_speed);
 			}

@@ -103,7 +103,7 @@ int main()
 	// player sprite
 	scene->sprites.emplace_back( std::make_unique<MegaSprite>() );
 	MegaSprite* player = scene->sprites.back().get();
-	//asset.textures["player"]->setSmooth(true);
+	asset.textures["player"]->setSmooth(true);
 	player->setTexture( *asset.textures["player"] );
 
 	player->setTextureRect( {0,0,64,64} );
@@ -117,11 +117,11 @@ int main()
 	player->frame_rects.emplace( "walk_right_down",  std::vector<sf::IntRect>() );
 	player->frame_rects.emplace( "idle",           std::vector<sf::IntRect>() );
 
-	player->frame_rects["walk_left_up"    ] = { {0,   0,  64,  64}, {64,   0, 64,  64}, {128,   0, 64,  64}, {192,   0, 64, 64} };
-	player->frame_rects["walk_left_down"  ] = { {0,  64,  64,  64}, {64,  64, 64,  64}, {128,  64, 64,  64}, {192,  64, 64, 64} };
-	player->frame_rects["walk_right_up"   ] = { {0, 128,  64,  64}, {64, 128, 64,  64}, {128, 128, 64,  64}, {192, 128, 64, 64} };
-	player->frame_rects["walk_right_down" ] = { {0, 192,  64,  64}, {64, 192, 64,  64}, {128, 192, 64,  64}, {192, 192, 64, 64} };
-	player->frame_rects["idle"            ] = { {0, 256,  64,  64}, {64, 256, 64,  64}, {128, 256, 64,  64}, {192, 256, 64, 64} };
+	player->frame_rects["walk_left_up"    ] = { {0,   0+1,  64,  64-1}, {64,   0+1, 64,  64-1}, {128,   0+1, 64,  64-1}, {192,   0+1, 64, 64-1} };
+	player->frame_rects["walk_left_down"  ] = { {0,  64+1,  64,  64-1}, {64,  64+1, 64,  64-1}, {128,  64+1, 64,  64-1}, {192,  64+1, 64, 64-1} };
+	player->frame_rects["walk_right_up"   ] = { {0, 128+1,  64,  64-1}, {64, 128+1, 64,  64-1}, {128, 128+1, 64,  64-1}, {192, 128+1, 64, 64-1} };
+	player->frame_rects["walk_right_down" ] = { {0, 192+1,  64,  64-1}, {64, 192+1, 64,  64-1}, {128, 192+1, 64,  64-1}, {192, 192+1, 64, 64-1} };
+	player->frame_rects["idle"            ] = { {0, 256+1,  64,  64-1}, {64, 256+1, 64,  64-1}, {128, 256+1, 64,  64-1}, {192, 256+1, 64, 64-1} };
 
 	scene->follow_sprite = player;
 
