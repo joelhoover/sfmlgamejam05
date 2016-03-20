@@ -162,20 +162,10 @@ public:
 	void apply_state_flags(Speech* speech)
 	{
 		persist.state_flags.insert(speech->state_flags.begin(), speech->state_flags.end());
-
-		/*std::unordered_set<std::string> inter;
-		std::set_intersection(
-			persist.state_flags.begin(), persist.state_flags.end(),
-			speech->state_flags.begin(), speech->state_flags.end(),
-			std::inserter(inter, inter.begin()));*/
-
-		std::cout << "flags: ";
-		//for (auto& str : inter )
+		/*std::cout << "flags: ";
 		for (auto& str : persist.state_flags )
-		{
 			std::cout << str << ", ";
-		}
-		std::cout << std::endl << std::endl;
+		std::cout << std::endl << std::endl;*/
 	}
 
 	Speech* get_entry(uint reply_id=0)

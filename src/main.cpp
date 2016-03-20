@@ -36,9 +36,8 @@ int main()
 	Asset asset;
 
 	// load files here
-//asset.load_font("pixel", "data/font/434.ttf");
 	asset.load_font("pixel", "data/font/ARCADEPI.TTF");
-	asset.load_texture("background", "data/tex/background.png");
+
 	asset.load_texture("placeholder", "data/tex/placeholder.png");
 	asset.load_texture("player", "data/tex/player.png");
 	asset.load_texture("box", "data/tex/box.png");
@@ -46,9 +45,12 @@ int main()
 
 	asset.load_texture("ui", "data/tex/ui.png");
 
+	asset.load_texture("exit", "data/tex/exit.png");
+
 	asset.load_shader("fader", "data/shaders/fader_v.glsl", "data/shaders/fader_f.glsl");
 
 	// scenes
+	asset.load_texture("cop_appt", "data/tex/cop_appt.png");
 	asset.load_texture("police_station", "data/tex/police_station.png");
 
 
@@ -68,8 +70,8 @@ int main()
 
 	// load / create new..
 
-	dialogue.load_from_file("data/dialogue.txt");
-
+	//dialogue.load_from_file("data/dialogue.txt");
+	dialogue.load_from_file(persist.get_current_dialogue_path());
 
 	//dialogue.sprite.set_font(*asset.fonts["pixel"]);
 
@@ -97,42 +99,22 @@ int main()
 	renderscenesprite.setScale( float(ZOOM), float(ZOOM) );
 
 	// todo: filename from persist
-	scene->load_from_file("data/police_station.txt");
-
+	//scene->load_from_file("data/police_station.txt");
+	scene->load_from_file(persist.get_current_scene_path());
 
 	// player sprite
-	scene->sprites.emplace_back( std::make_unique<MegaSprite>() );
-	MegaSprite* player = scene->sprites.back().get();
-	asset.textures["player"]->setSmooth(true);
-	player->setTexture( *asset.textures["player"] );
-
-	player->setTextureRect( {0,0,64,64} );
-	player->setOrigin(32,64);
-	player->setScale(0.45f,0.45f);
-	player->setPosition(630,430);
-
-	player->frame_rects.emplace( "walk_left_up",   std::vector<sf::IntRect>() );
-	player->frame_rects.emplace( "walk_left_down", std::vector<sf::IntRect>() );
-	player->frame_rects.emplace( "walk_right_up",  std::vector<sf::IntRect>() );
-	player->frame_rects.emplace( "walk_right_down",  std::vector<sf::IntRect>() );
-	player->frame_rects.emplace( "idle",           std::vector<sf::IntRect>() );
-
-	player->frame_rects["walk_left_up"    ] = { {0,   0+1,  64,  64-1}, {64,   0+1, 64,  64-1}, {128,   0+1, 64,  64-1}, {192,   0+1, 64, 64-1} };
-	player->frame_rects["walk_left_down"  ] = { {0,  64+1,  64,  64-1}, {64,  64+1, 64,  64-1}, {128,  64+1, 64,  64-1}, {192,  64+1, 64, 64-1} };
-	player->frame_rects["walk_right_up"   ] = { {0, 128+1,  64,  64-1}, {64, 128+1, 64,  64-1}, {128, 128+1, 64,  64-1}, {192, 128+1, 64, 64-1} };
-	player->frame_rects["walk_right_down" ] = { {0, 192+1,  64,  64-1}, {64, 192+1, 64,  64-1}, {128, 192+1, 64,  64-1}, {192, 192+1, 64, 64-1} };
-	player->frame_rects["idle"            ] = { {0, 256+1,  64,  64-1}, {64, 256+1, 64,  64-1}, {128, 256+1, 64,  64-1}, {192, 256+1, 64, 64-1} };
-
-	scene->follow_sprite = player;
+	//scene->follow_sprite = scene->spawn_player();
+	//scene->follow_sprite = scene->player;
 
 	// dialogue test sprite
-	scene->sprites.emplace_back( std::make_unique<MegaSprite>() );
+
+	/*scene->sprites.emplace_back( std::make_unique<MegaSprite>() );
 	MegaSprite* sprite = scene->sprites.back().get();
 	sprite->setTexture( *asset.textures["placeholder"] );
 	sprite->setPosition(706,438);
 
 	sprite->speech_id = 0;
-	sprite->use_speech = true;
+	sprite->use_speech = true;*/
 
 
 	uint edit_collision_tiles = 2;
@@ -147,6 +129,8 @@ int main()
 			{
 				terminate = true;
 			}
+
+
 
 			if( event.type == sf::Event::MouseMoved)
 			{
@@ -254,15 +238,12 @@ int main()
 			{
 				if( event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::S && event.key.control == true)
 				{
-					dialogue.save_to_file("data/dialogue.txt");
 
-					// todo: persist will determine scene save
-					scene->save_to_file("data/police_station.txt");
+					dialogue.save_to_file(persist.get_current_dialogue_path());
+					scene->save_to_file(persist.get_current_scene_path());
 				}
-				else
-				{
-					// save persist data
-				}
+				// save persist data?
+
 			}
 
 

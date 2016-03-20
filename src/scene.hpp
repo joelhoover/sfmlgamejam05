@@ -49,9 +49,17 @@ public:
 
 		tilemap = std::make_unique<TileMap>( data["grid_size"].get<uint>(), 8 );
 
-		for (auto& element : data["collision"])
+		if (data.count("collision"))
 		{
-			tilemap->grid.push_back( element.get<uint>() );
+			for (auto& element : data["collision"])
+			{
+				tilemap->grid.push_back( element.get<uint>() );
+			}
+		}
+		else
+		{
+			// assume new file
+			tilemap->grid.resize(tilemap->map_area);
 		}
 
 		assert( tilemap->grid.size() == tilemap->map_area );
@@ -59,6 +67,21 @@ public:
 		scene_file = data["bg"].get<std::string>();
 
 		sprite_bg.setTexture( *asset.textures[scene_file] );
+
+
+		// sprites
+		//{
+		//	sf::Vector2i pos = sf::Vector2i( data["player"]["location"][0].get<uint>(), data["player"]["location"][1].get<uint>() );
+		//	spawn_player( pos );
+		//}
+
+		for (auto& element : data["sprites"])
+		{
+
+			spawn_sprite(element);
+
+			//sprites.emplace_back( std::make_unique<MegaSprite>(pos, element) );
+		}
 	}
 
 	void save_to_file(const std::string& file_name)
@@ -73,7 +96,59 @@ public:
 
 		data["bg"] = scene_file;
 
+
+		// sprites
+		/*{
+			sf::Vector2i pos = tilemap->scene_to_map_xy( player->getPosition() );
+			data["player"]["location"][0] = pos.x;
+			data["player"]["location"][1] = pos.y;
+		}*/
+
+		for (auto& sprite : sprites)
+		{
+			json jsprite = sprite->save();
+			//jsprite["name"] = sprite->name;
+
+			sf::Vector2i pos = tilemap->scene_to_map_xy( sprite->getPosition() );
+			jsprite["location"][0] = pos.x;
+			jsprite["location"][1] = pos.y;
+			//jsprite["location"] = { pos.x, pos.y };
+
+			data["sprites"].push_back( jsprite );
+		}
+
 		shrapx::save_text(file_name, data.dump(1));
+	}
+
+	MegaSprite* spawn_sprite(json& obj)
+	{
+
+		//std::string name = element["name"].get<std::string>();
+
+		sf::Vector2f pos = tilemap->map_xy_to_scene( sf::Vector2i( obj["location"][0].get<uint>(), obj["location"][1].get<uint>() ) );
+
+
+		sprites.emplace_back( std::make_unique<MegaSprite>(obj, pos) );
+		MegaSprite* msprite = sprites.back().get();
+
+		std::string name = msprite->name;
+		if (asset.textures.find(name) != asset.textures.end() )
+		{
+			asset.textures[name]->setSmooth(true);
+			msprite->setTexture( *asset.textures[name] );
+		}
+		else
+		{
+			std::cout << "sprite called: " << name << " not known." << std::endl;
+		}
+
+		if ( name == "player" )
+		{
+			follow_sprite = msprite;
+			player = msprite;
+		}
+
+		return msprite;
 	}
 
 	MegaSprite* frob_has_sprite(const sf::Vector2f& pos_in_world)
@@ -308,6 +383,8 @@ public:
 
 	sf::View view;
 	sf::RenderTexture renderscene;
+
+	MegaSprite* player = nullptr;
 
 private:
 
