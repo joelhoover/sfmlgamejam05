@@ -8,7 +8,6 @@
 #include "common.hpp"
 #include "asset.hpp"
 #include "persist.hpp"
-#include "dialogue.hpp"
 
 #include "tilemap.hpp"
 #include "pathfind.hpp"
@@ -24,10 +23,9 @@ class Scene : public sf::Drawable
 
 public:
 
-	Scene(Asset& iasset, Dialogue& idialogue, Persist& ipersist)
+	Scene(Asset& iasset, Persist& ipersist)
 		:
 		asset(iasset),
-		dialogue(idialogue),
 		persist(ipersist)
 	{
 		renderscene.create(ZOOM_W, ZOOM_H, false);
@@ -98,21 +96,14 @@ public:
 
 
 		// sprites
-		/*{
-			sf::Vector2i pos = tilemap->scene_to_map_xy( player->getPosition() );
-			data["player"]["location"][0] = pos.x;
-			data["player"]["location"][1] = pos.y;
-		}*/
 
 		for (auto& sprite : sprites)
 		{
 			json jsprite = sprite->save();
-			//jsprite["name"] = sprite->name;
 
 			sf::Vector2i pos = tilemap->scene_to_map_xy( sprite->getPosition() );
 			jsprite["location"][0] = pos.x;
 			jsprite["location"][1] = pos.y;
-			//jsprite["location"] = { pos.x, pos.y };
 
 			data["sprites"].push_back( jsprite );
 		}
@@ -122,11 +113,7 @@ public:
 
 	MegaSprite* spawn_sprite(json& obj)
 	{
-
-		//std::string name = element["name"].get<std::string>();
-
 		sf::Vector2f pos = tilemap->map_xy_to_scene( sf::Vector2i( obj["location"][0].get<uint>(), obj["location"][1].get<uint>() ) );
-
 
 		sprites.emplace_back( std::make_unique<MegaSprite>(obj, pos) );
 		MegaSprite* msprite = sprites.back().get();
@@ -163,64 +150,43 @@ public:
 		return nullptr;
 	}
 
-	/*uint frob_type(sf::Vector2f pos_in_world, uint current_type)
-	{
-		for (auto& sprite : sprites)
-		{
-			if ( sprite->getGlobalBounds().contains( pos_in_world ) )
-			{
-				for ( uint ut : sprite->use_types)
-				{
-					if (current_type == ut) return current_type;
-				}
-				return sprite->use_types.size() ? sprite->use_types.front() : current_type;
-			}
-		}
-		return current_type;
-	}*/
-
-	void frob( const sf::Vector2f& pos_in_world)
+	bool frob( const sf::Vector2f& pos_in_world, SpeechID& speech_id)
 	{
 		bool got_id = false;
-		SpeechID speech_id = 0;
+		SpeechID temp_id = 0;
 
 		auto mouse_scene_pos = mouse_to_scene(pos_in_world);
 		for (auto& sprite : sprites)
 		{
-			if ( sprite->getGlobalBounds().contains( mouse_scene_pos ) )
+			if ( sprite->getGlobalBounds().contains( mouse_scene_pos ))
 			{
 				if (sprite->use_speech)
 				{
-
-					// player and dialogue-subject to enter dialogue mode
-					//   stop moving, face each other, change animation
-
 					got_id = true;
-					speech_id = sprite->speech_id;
+
+					temp_id = sprite->speech_id;
 
 					break;
 				}
 			}
 		}
 
-		// give sprite a path to mouse target
-		MegaSprite* sprite = sprites.front().get();
-
-		// distance
-		if (sf::ManhattenDistance(mouse_scene_pos, sprite->getPosition()) < DIALOGUE_DISTANCE)
+		auto dist = sf::ManhattenDistance(mouse_scene_pos, player->getPosition());
+		if ( dist < DIALOGUE_DISTANCE)
 		{
 			if(got_id)
 			{
-				defocus();
-				dialogue.activate( speech_id );
+				speech_id = temp_id;
+				return true;
 			}
 		}
 		else
 		{
 			PathFind pf = PathFind();
-			sprite->grid_path = pf.find_path(sprite->getPosition(), mouse_scene_pos, tilemap.get());
+			player->grid_path = pf.find_path(player->getPosition(), mouse_scene_pos, tilemap.get());
 		}
 
+		return false;
 	}
 
 	sf::Vector2f mouse_to_scene(const sf::Vector2f& pos)
@@ -404,7 +370,6 @@ private:
 
 	bool m_focus = true;
 	Asset& asset;
-	Dialogue& dialogue;
 	Persist& persist;
 };
 

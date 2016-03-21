@@ -37,6 +37,8 @@ public:
 		cursor.setTexture( *asset.textures["text_cursor"] );
 		//cursor.setOrigin(0,5);
 		cursor.setColor(sf::Color::Red);
+
+		default_font = asset.fonts["pixel"].get();
 	}
 
 	void load_from_file(const std::string& file_name)
@@ -132,10 +134,10 @@ public:
 	{
 		if ( !m_text_fill_complete ) return;
 
-		Speech* speech = get_entry();
-		if (speech == nullptr)
+		Speech* speech = get_reply();
+		if (speech == nullptr || speech->replies.size() == 0 || m_highlighted_line == 0 )
 		{
-			deactivate();
+			//deactivate();
 			return;
 		}
 
@@ -145,13 +147,29 @@ public:
 			m_highlighted_line = 1;
 		}
 
-		if ( speech->replies.size() == 0 || m_highlighted_line == 0 )
+
+		// if the player chose something to say, skip displaying that next, and go straight to the computers next speech
+		player_speaking = !player_speaking;
+
+		if (speech->replies.size() && player_speaking)
 		{
-			deactivate();
+			Speech* player_speech = get_reply(1);
+
+			// activate computers reply
+			if (player_speech != nullptr && player_speech->replies.size() )
+			{
+				activate( player_speech->replies[0] );
+				player_speaking = !player_speaking;
+			}
+			else
+			{
+				//deactivate();
+			}
 			return;
 		}
 
-		Speech* entrep = get_entry( m_highlighted_line );
+
+		Speech* entrep = get_reply( m_highlighted_line );
 		if (entrep == nullptr) return;
 
 		apply_state_flags(entrep);
@@ -168,7 +186,7 @@ public:
 		std::cout << std::endl << std::endl;*/
 	}
 
-	Speech* get_entry(uint reply_id=0)
+	Speech* get_reply(uint reply_id=0)
 	{
 		auto entry = entries[m_active_speech_id].get();
 
@@ -357,7 +375,7 @@ public:
 
 	void edit_right()
 	{
-		Speech* entrep = get_entry(m_highlighted_line);
+		Speech* entrep = get_reply(m_highlighted_line);
 		if (entrep == nullptr) return;
 		if (m_cursor_position >= entrep->text.size()) return;
 		++m_cursor_position;
@@ -369,7 +387,7 @@ public:
 		{
 			--m_cursor_position;
 
-			Speech* entrep = get_entry(m_highlighted_line);
+			Speech* entrep = get_reply(m_highlighted_line);
 			if (entrep == nullptr) return;
 			entrep->text.erase(m_cursor_position,1);
 		}
@@ -377,7 +395,7 @@ public:
 
 	void edit_insert(char c)
 	{
-		Speech* entrep = get_entry(m_highlighted_line);
+		Speech* entrep = get_reply(m_highlighted_line);
 		if (entrep == nullptr) return;
 		entrep->text.insert(m_cursor_position,1,c);
 		m_cursor_position++;
@@ -390,14 +408,14 @@ public:
 
 	void edit_cursor_fix_limits()
 	{
-		Speech* entrep = get_entry(m_highlighted_line);
+		Speech* entrep = get_reply(m_highlighted_line);
 		if(entrep == nullptr) return;
 		if (m_cursor_position > entrep->text.size()) m_cursor_position = entrep->text.size();
 	}
 
 	void edit_cursor_place_at_end()
 	{
-		Speech* entrep = get_entry(m_highlighted_line);
+		Speech* entrep = get_reply(m_highlighted_line);
 		if(entrep == nullptr) return;
 		m_cursor_position = entrep->text.size();
 	}
@@ -449,6 +467,8 @@ public:
 
 	bool is_active() { return m_active; }
 	void deactivate() { m_active = false; }
+
+	bool player_speaking = false;
 
 private:
 

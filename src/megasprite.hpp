@@ -37,11 +37,16 @@ public:
 			use_speech = true;
 		}
 
+		if (obj.count("scale"))
+		{
+			setScale(obj["scale"].get<float>(),obj["scale"].get<float>());
+		}
+
 		if ( name == "player" )
 		{
 			setTextureRect( {0,0,64,64} );
 			setOrigin(32,64);
-			setScale(0.45f,0.45f);
+			//setScale(0.45f,0.45f);
 
 			frame_rects.emplace( "walk_left_up",   std::vector<sf::IntRect>() );
 			frame_rects.emplace( "walk_left_down", std::vector<sf::IntRect>() );
@@ -64,6 +69,9 @@ public:
 
 		if ( use_speech )
 			obj["speech_id"] = speech_id;
+
+		float scal = getScale().x;
+		obj["scale"] = scal;
 
 		return obj;
 	}

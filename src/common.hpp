@@ -12,7 +12,7 @@
 #define ZOOM_HQ ZOOM_HH/2
 
 #define WALK_DISTANCE 2.0f
-#define DIALOGUE_DISTANCE 14.0f
+#define DIALOGUE_DISTANCE 50
 
 using uint = unsigned int;
 

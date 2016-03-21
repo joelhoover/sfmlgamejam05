@@ -33,13 +33,22 @@ int main()
 	renderuisprite.setTexture(renderui.getTexture());
 	renderuisprite.setScale( float(ZOOM), float(ZOOM) );
 
+	Persist persist;
+
 	Asset asset;
 
 	// load files here
 	asset.load_font("pixel", "data/font/ARCADEPI.TTF");
 
 	asset.load_texture("placeholder", "data/tex/placeholder.png");
+
 	asset.load_texture("player", "data/tex/player.png");
+
+	asset.load_texture("phone", "data/tex/phone.png");
+
+	asset.load_texture("jerry_stretcher", "data/tex/jerry_stretcher.png");
+	asset.load_texture("maria", "data/tex/maria.png");
+
 	asset.load_texture("box", "data/tex/box.png");
 	asset.load_texture("text_cursor", "data/tex/text_cursor.png");
 
@@ -51,6 +60,7 @@ int main()
 
 	// scenes
 	asset.load_texture("cop_appt", "data/tex/cop_appt.png");
+	asset.load_texture("crimescene", "data/tex/crimescene.png");
 	asset.load_texture("police_station", "data/tex/police_station.png");
 
 
@@ -61,21 +71,12 @@ int main()
 
 	sf::Sprite edit_mode_sprite( *asset.textures["ui"] );
 	edit_mode_sprite.setTextureRect( sf::IntRect(32,0,32,16) );
-
 	edit_mode_sprite.setPosition( ZOOM_W-32, 0 );
 
-	Persist persist;
-
-	Dialogue dialogue(asset, persist);
+	sf::Sprite renderscenesprite;
+	renderscenesprite.setScale( float(ZOOM), float(ZOOM) );
 
 	// load / create new..
-
-	//dialogue.load_from_file("data/dialogue.txt");
-	dialogue.load_from_file(persist.get_current_dialogue_path());
-
-	//dialogue.sprite.set_font(*asset.fonts["pixel"]);
-
-	dialogue.default_font = asset.fonts["pixel"].get();
 
 	// game mode
 	// auto load persistent data
@@ -90,32 +91,17 @@ int main()
 	// load scene according to persist data
 
 
-	std::unique_ptr<Scene> scene = std::make_unique<Scene>(asset, dialogue, persist);
+	std::unique_ptr<Dialogue> dialogue = std::make_unique<Dialogue>(asset, persist);
+	std::unique_ptr<Scene> scene = std::make_unique<Scene>(asset, persist);
 
-
-	sf::Sprite renderscenesprite;
 
 	renderscenesprite.setTexture( scene->renderscene.getTexture());
-	renderscenesprite.setScale( float(ZOOM), float(ZOOM) );
 
-	// todo: filename from persist
-	//scene->load_from_file("data/police_station.txt");
+	dialogue->load_from_file(persist.get_current_dialogue_path());
 	scene->load_from_file(persist.get_current_scene_path());
 
-	// player sprite
-	//scene->follow_sprite = scene->spawn_player();
-	//scene->follow_sprite = scene->player;
 
 	// dialogue test sprite
-
-	/*scene->sprites.emplace_back( std::make_unique<MegaSprite>() );
-	MegaSprite* sprite = scene->sprites.back().get();
-	sprite->setTexture( *asset.textures["placeholder"] );
-	sprite->setPosition(706,438);
-
-	sprite->speech_id = 0;
-	sprite->use_speech = true;*/
-
 
 	uint edit_collision_tiles = 2;
 	bool edit_mode = false;
@@ -135,14 +121,14 @@ int main()
 			if( event.type == sf::Event::MouseMoved)
 			{
 				sf::Vector2f pos = { float(event.mouseMove.x) / ZOOM, float(event.mouseMove.y) / ZOOM};
-				if ( dialogue.is_active() )
+				if ( dialogue->is_active() )
 				{
 					if (!edit_mode)
 					{
 						// highlight dialogue option
 						pointer_type = CURSOR_DEFAULT;
 
-						dialogue.mouse_selected(pos);
+						dialogue->mouse_selected(pos);
 					}
 				}
 				else
@@ -178,37 +164,37 @@ int main()
 
 			if (edit_mode)
 			{
-				if ( dialogue.is_active() )
+				if ( dialogue->is_active() )
 				{
 					// dev edit speech text:
 
 					if ( event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Down)
-						dialogue.edit_down();
+						dialogue->edit_down();
 
 					if ( event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Up)
-						dialogue.edit_up();
+						dialogue->edit_up();
 
 					if ( event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Left)
-						dialogue.edit_left();
+						dialogue->edit_left();
 
 					if ( event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Right)
-						dialogue.edit_right();
+						dialogue->edit_right();
 
 					if (event.type == sf::Event::TextEntered)
 					{
 						if (event.text.unicode > 31 && event.text.unicode < 128)
 						{
-							dialogue.edit_insert((char)event.text.unicode);
+							dialogue->edit_insert((char)event.text.unicode);
 						}
 						else
 						{
 							if(event.text.unicode == 8) // backspace
 							{
-								dialogue.edit_backspace();
+								dialogue->edit_backspace();
 							}
 							if(event.text.unicode == 13) // CR
 							{
-								dialogue.edit_newline();
+								dialogue->edit_newline();
 							}
 						}
 					}
@@ -239,7 +225,7 @@ int main()
 				if( event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::S && event.key.control == true)
 				{
 
-					dialogue.save_to_file(persist.get_current_dialogue_path());
+					dialogue->save_to_file(persist.get_current_dialogue_path());
 					scene->save_to_file(persist.get_current_scene_path());
 				}
 				// save persist data?
@@ -254,14 +240,24 @@ int main()
 				sf::Vector2f pos = { float(event.mouseButton.x) / ZOOM, float(event.mouseButton.y) / ZOOM};
 
 				// only frob scene if theres no dialogue up
-				if ( dialogue.is_active() )
+				if ( dialogue->is_active() )
 				{
-					dialogue.activate_highlighted_or_default();
+					dialogue->activate_highlighted_or_default();
 				}
 				else
 				{
 					if (!edit_mode)
-						scene->frob( pos );
+					{
+						SpeechID speech_id;
+						if ( scene->frob( pos, speech_id ) )
+						{
+							scene->defocus();
+							dialogue->activate( speech_id );
+						}
+					}
+
+
+
 					//else
 						//scene->toggle_grid_location(pos);
 				}
@@ -272,14 +268,14 @@ int main()
 				sf::Vector2f pos = { float(event.mouseButton.x) / ZOOM, float(event.mouseButton.y) / ZOOM};
 
 				// quit dialogue
-				if ( dialogue.is_active() )
+				if ( dialogue->is_active() )
 				{
-					dialogue.deactivate();
+					dialogue->deactivate();
 					scene->focus();
 				}
 			}
 
-			if ( edit_mode && !dialogue.is_active() && event.type == sf::Event::MouseButtonPressed )
+			if ( edit_mode && !dialogue->is_active() && event.type == sf::Event::MouseButtonPressed )
 			{
 				sf::Vector2f pos = { float(event.mouseButton.x) / ZOOM, float(event.mouseButton.y) / ZOOM};
 
@@ -296,7 +292,7 @@ int main()
 			{
 				edit_mode = !edit_mode;
 
-				dialogue.edit_mode(edit_mode);
+				dialogue->edit_mode(edit_mode);
 				scene->edit_mode(edit_mode);
 			}
 
@@ -305,14 +301,32 @@ int main()
 		// Update
 		frame_time = frame_clock.restart();
 
-		dialogue.update();
+		dialogue->update();
 
 		scene->update(time);
 
-		//view.setCenter( scene->view_pos );
-		//scene->view_pos = view.getCenter();
 
 		// start, restart game = reset persist
+
+		// if loading new scene:
+		if (persist.state_flags.find("exit_to_crimescene") != persist.state_flags.end() )
+		{
+			persist.state_flags.erase("exit_to_crimescene");
+
+			persist.scene_prefix = "crimescene";
+
+			// reload scene:
+			dialogue.reset();
+			scene.reset();
+
+			dialogue = std::make_unique<Dialogue>(asset, persist);
+			scene = std::make_unique<Scene>(asset, persist);
+
+			renderscenesprite.setTexture( scene->renderscene.getTexture());
+			dialogue->load_from_file(persist.get_current_dialogue_path());
+			scene->load_from_file(persist.get_current_scene_path());
+		}
+
 
 		// transition from one scene to another = reset scene
 
@@ -326,7 +340,7 @@ int main()
 
 
 		renderui.clear(sf::Color::Transparent);
-		if ( dialogue.is_active() ) renderui.draw( dialogue );
+		if ( dialogue->is_active() ) renderui.draw( *dialogue );
 		if ( edit_mode )	          renderui.draw( edit_mode_sprite );
 		renderui.draw(pointer_sprite);
 		renderui.display();
