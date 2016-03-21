@@ -1,0 +1,55 @@
+[{
+	"id": 3,
+	"text": "What are you doing?",
+	"reply": [
+		10
+	]
+}, {
+	"id": 1,
+	"reply": [
+		5
+	],
+	"text": "Poor Jerry. Its a shock for us all."
+}, {
+	"id": 0,
+	"reply": [
+		2
+	],
+	"text": "Euugh.. I must have finally gone too far."
+}, {
+	"id": 2,
+	"reply": [
+		4
+	],
+	"text": "Who are you?"
+}, {
+	"id": 4,
+	"text": "I am Jerry S. The lead journalist here\nat Prism News.",
+	"reply": [
+		3
+	]
+}, {
+	"id": 5,
+	"reply": [
+		6
+	],
+	"text": "Where did it happen?"
+}, {
+	"id": 10,
+	"text": "I got hit by an explosion in the elevator."
+}, {
+	"id": 8,
+	"text": "From the mail room, he usually picks up the mail\nfor us."
+}, {
+	"id": 7,
+	"reply": [
+		8
+	],
+	"text": "The mail eh?"
+}, {
+	"id": 6,
+	"reply": [
+		7
+	],
+	"text": "Over at that elevator, Jerry was collecting\nthe morning mail and as he walked into the\nelevator, it triggered the bomb."
+}]

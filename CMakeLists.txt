@@ -10,8 +10,8 @@ set(SFML_ROOT "C:/Program Files (x86)/SFML")
 find_package(SFML 2.3.2 REQUIRED COMPONENTS graphics window audio network system)
 
 
-set(CMAKE_CXX_FLAGS "-std=c++14 -pedantic -Wshadow ${CMAKE_CXX_FLAGS}")
-# -Wall -Wextra -Wconversion
+set(CMAKE_CXX_FLAGS "-std=c++14 -Wno-deprecated ${CMAKE_CXX_FLAGS}")
+# -pedantic -Wshadow -Wall -Wextra -Wconversion
 
 
 #file(GLOB_RECURSE SRC "src/*.cpp")

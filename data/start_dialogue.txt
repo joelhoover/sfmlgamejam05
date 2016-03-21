@@ -1,0 +1,83 @@
+[
+ {
+  "id": 11,
+  "text": "Okay."
+ },
+ {
+  "id": 5,
+  "reply": [
+   6
+  ],
+  "text": "What news?"
+ },
+ {
+  "flag": [
+   "exit_to_crimescene"
+  ],
+  "id": 2,
+  "text": "Okay."
+ },
+ {
+  "id": 3,
+  "text": "Not Yet."
+ },
+ {
+  "id": 8,
+  "reply": [
+   9
+  ],
+  "text": "Who is this?"
+ },
+ {
+  "id": 4,
+  "reply": [
+   6
+  ],
+  "text": "You woke me up!"
+ },
+ {
+  "id": 10,
+  "reply": [
+   11
+  ],
+  "text": "I need you to investigate the bombing."
+ },
+ {
+  "id": 9,
+  "reply": [
+   6
+  ],
+  "text": "I can't go in to that."
+ },
+ {
+  "id": 1,
+  "reply": [
+   2,
+   3
+  ],
+  "text": "Ready to go to the crimescene?"
+ },
+ {
+  "id": 0,
+  "reply": [
+   4,
+   5
+  ],
+  "text": "Did you see the news?"
+ },
+ {
+  "id": 7,
+  "reply": [
+   10
+  ],
+  "text": "Why would anyone attack the press?"
+ },
+ {
+  "id": 6,
+  "reply": [
+   7,
+   8
+  ],
+  "text": "The explosion at Prism Times?"
+ }
+]

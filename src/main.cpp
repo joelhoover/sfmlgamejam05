@@ -40,7 +40,7 @@ int main()
 	// load files here
 	asset.load_font("pixel", "data/font/ARCADEPI.TTF");
 
-	asset.load_texture("placeholder", "data/tex/placeholder.png");
+	//asset.load_texture("placeholder", "data/tex/placeholder.png");
 
 	asset.load_texture("player", "data/tex/player.png");
 
@@ -61,7 +61,7 @@ int main()
 	// scenes
 	asset.load_texture("cop_appt", "data/tex/cop_appt.png");
 	asset.load_texture("crimescene", "data/tex/crimescene.png");
-	asset.load_texture("police_station", "data/tex/police_station.png");
+	//asset.load_texture("police_station", "data/tex/police_station.png");
 
 
 	sf::Sprite pointer_sprite( *asset.textures["ui"] );
