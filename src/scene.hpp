@@ -17,6 +17,7 @@
 #include <vector>
 #include <memory>
 
+#include "resource_path.hpp"
 
 class Scene : public sf::Drawable
 {
@@ -41,7 +42,7 @@ public:
 
 	void load_from_file(const std::string& file_name)
 	{
-		json data = shrapx::load_json(file_name);
+		json data = shrapx::load_json(resource_path() + file_name);
 
 		tilemap.reset();
 
@@ -108,7 +109,7 @@ public:
 			data["sprites"].push_back( jsprite );
 		}
 
-		shrapx::save_text(file_name, data.dump(1));
+		shrapx::save_text(resource_path() + file_name, data.dump(1));
 	}
 
 	MegaSprite* spawn_sprite(json& obj)

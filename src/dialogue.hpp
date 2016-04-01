@@ -17,6 +17,8 @@
 
 #include "persist.hpp"
 
+#include "resource_path.hpp"
+
 using json = nlohmann::json;
 
 // determine choice
@@ -43,7 +45,7 @@ public:
 
 	void load_from_file(const std::string& file_name)
 	{
-		json data = shrapx::load_json(file_name);
+		json data = shrapx::load_json(resource_path() + file_name);
 		for (auto& element : data)
 		{
 			entries.emplace( element["id"].get<SpeechID>(), std::make_unique<Speech>(element) );
@@ -58,7 +60,7 @@ public:
 		{
 			data.push_back( entry_pair.second->save() );
 		}
-		shrapx::save_text(file_name, data.dump(1));
+		shrapx::save_text(resource_path() + file_name, data.dump(1));
 	}
 
 	void update()

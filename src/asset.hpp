@@ -11,6 +11,7 @@
 #include <memory>
 
 #include "common.hpp"
+#include "resource_path.hpp"
 
 class Asset
 {
@@ -21,28 +22,28 @@ public:
 	{
 		auto emplace_result = shaders.emplace(tag, std::make_unique<sf::Shader>());
 		assert(emplace_result.second);
-		assert( emplace_result.first->second.get()->loadFromFile(file_vert, file_frag) );
+		assert( emplace_result.first->second.get()->loadFromFile(resource_path() + file_vert, resource_path() + file_frag) );
 	}
 
 	void load_font(const std::string& tag, const std::string& filepath)
 	{
 		auto emplace_result = fonts.emplace(tag, std::make_unique<sf::Font>());
 		assert(emplace_result.second);
-		assert( emplace_result.first->second.get()->loadFromFile(filepath) );
+		assert( emplace_result.first->second.get()->loadFromFile(resource_path() + filepath) );
 	}
 
 	void load_texture(const std::string& tag, const std::string& filepath)
 	{
 		auto emplace_result = textures.emplace(tag, std::make_unique<sf::Texture>());
 		sf::Texture* tex = emplace_result.first->second.get();
-		assert( tex->loadFromFile(filepath) );
+		assert( tex->loadFromFile(resource_path() + filepath) );
 	}
 
 	void load_soundbuffer(const std::string& tag, const std::string& filepath)
 	{
 		auto emplace_result = soundbuffers.emplace(tag, std::make_unique<sf::SoundBuffer>());
 		sf::SoundBuffer* sb = emplace_result.first->second.get();
-		assert( sb->loadFromFile(filepath) );
+		assert( sb->loadFromFile(resource_path() + filepath) );
 	}
 
 	std::unordered_map<std::string, std::unique_ptr<sf::Shader>> shaders;

@@ -331,24 +331,13 @@ int main()
 		// transition from one scene to another = reset scene
 
 		// Render
-
-
-		scene->renderscene.clear();
-		scene->renderscene.setView(scene->view);
-		scene->renderscene.draw(*scene);
-		scene->renderscene.display();
-
-
-		renderui.clear(sf::Color::Transparent);
-		if ( dialogue->is_active() ) renderui.draw( *dialogue );
-		if ( edit_mode )	          renderui.draw( edit_mode_sprite );
-		renderui.draw(pointer_sprite);
-		renderui.display();
-
-
 		window.clear();
-		window.draw(renderscenesprite);
-		window.draw(renderuisprite);
+		window.setView(scene->view);
+		window.draw(*scene);
+		window.setView(renderui.getDefaultView());
+		if ( dialogue->is_active() ) window.draw( *dialogue );
+		if ( edit_mode )	         window.draw( edit_mode_sprite );
+		window.draw(pointer_sprite);
 		window.display();
 
 		++time;
